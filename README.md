@@ -88,6 +88,7 @@ module "api" {
   datadog_log_config = {
     source  = "ruby"
     service = "my-api"
+    exclude = ["/health", "/ready"]  # Optional: filter noisy endpoints from logs
   }
   # Admission controller label is enabled by default
 }
@@ -281,7 +282,7 @@ module "api" {
 |------|-------------|------|---------|
 | `datadog_enabled` | Enable Datadog integration | `bool` | `false` |
 | `datadog_ust_tags` | Unified Service Tagging | `object` | `{}` |
-| `datadog_log_config` | Log collection config | `object` | `{}` |
+| `datadog_log_config` | Log collection config (source, service, exclude) | `object` | `{}` |
 | `datadog_checks` | Autodiscovery checks | `map(any)` | `{}` |
 | `datadog_check_id` | Built-in check ID | `string` | `null` |
 | `datadog_admission_controller` | Enable admission controller label | `bool` | `true` |

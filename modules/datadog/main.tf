@@ -31,14 +31,30 @@ locals {
 
   # Log collection annotations
   # https://docs.datadoghq.com/containers/kubernetes/log/
-  log_config_entries = compact([
-    var.log_config.source != null ? "\"source\": \"${var.log_config.source}\"" : null,
-    var.log_config.service != null ? "\"service\": \"${var.log_config.service}\"" : null,
-    length(var.log_config.exclude) > 0 ? "\"exclude_at_match\": \"${join("|", var.log_config.exclude)}\"" : null
-  ])
+  # https://docs.datadoghq.com/agent/logs/advanced_log_collection/?tab=kubernetes#filter-logs
 
-  log_annotations = length(local.log_config_entries) > 0 ? {
-    "ad.datadoghq.com/${var.container_name}.logs" = "[{${join(", ", local.log_config_entries)}}]"
+  # Build exclusion rules using log_processing_rules format
+  exclusion_rules = [
+    for pattern in coalesce(var.log_config.exclude, []) : {
+      type    = "exclude_at_match"
+      name    = "exclude-${replace(pattern, "/\\W+/", "-")}"
+      pattern = pattern
+    }
+  ]
+
+  # Build log configuration object
+  log_config_object = merge(
+    { for k, v in {
+      source  = var.log_config.source
+      service = var.log_config.service
+    } : k => v if v != null },
+    length(local.exclusion_rules) > 0 ? {
+      log_processing_rules = local.exclusion_rules
+    } : {}
+  )
+
+  log_annotations = length(keys(local.log_config_object)) > 0 ? {
+    "ad.datadoghq.com/${var.container_name}.logs" = jsonencode([local.log_config_object])
   } : {}
 
   # Autodiscovery check annotations
