@@ -11,6 +11,8 @@ A comprehensive Terraform module for deploying Kubernetes workloads with support
 - **PDB**: Pod Disruption Budget for high availability
 - **ServiceMonitor**: Prometheus Operator integration for metrics collection
 - **Datadog**: Unified Service Tagging, logging, and admission controller integration
+- **ConfigMap**: Standalone ConfigMap with content-hash naming for automatic rollouts
+- **Secret**: Standalone Secret with content-hash naming for automatic rollouts
 
 ## Usage
 
@@ -343,6 +345,62 @@ module "pdb" {
   }
 
   min_available = "50%"
+}
+```
+
+### ConfigMap Module
+
+ConfigMap with content-hash naming - when content changes, the name changes, triggering deployment rollouts.
+
+```hcl
+module "app_config" {
+  source = "fabn/workload/kubernetes//modules/config-map"
+
+  namespace   = "production"
+  name_prefix = "my-app"
+
+  data = {
+    "config.yaml" = file("config.yaml")
+    "DATABASE_HOST" = "postgres.db.svc.cluster.local"
+  }
+}
+
+# Use with workload - deployment will rollout when config changes
+module "app" {
+  source = "fabn/workload/kubernetes"
+
+  namespace       = "production"
+  name            = "my-app"
+  image           = "my-registry/app:v1.0.0"
+  config_map_refs = [module.app_config.name]
+}
+```
+
+### Secret Module
+
+Secret with content-hash naming - when content changes, the name changes, triggering deployment rollouts.
+
+```hcl
+module "app_secrets" {
+  source = "fabn/workload/kubernetes//modules/secret"
+
+  namespace   = "production"
+  name_prefix = "my-app"
+
+  data = {
+    "DATABASE_URL" = var.database_url
+    "API_KEY"      = var.api_key
+  }
+}
+
+# Use with workload - deployment will rollout when secrets change
+module "app" {
+  source = "fabn/workload/kubernetes"
+
+  namespace   = "production"
+  name        = "my-app"
+  image       = "my-registry/app:v1.0.0"
+  secret_refs = [module.app_secrets.name]
 }
 ```
 
