@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "mcp__filesystem__*",
+      "mcp__awslabs_terraform-mcp-server__*",
+      "mcp__git__git_status",
+      "mcp__git__git_diff",
+      "mcp__git__git_diff_staged",
+      "mcp__git__git_diff_unstaged",
+      "mcp__git__git_log",
+      "mcp__git__git_show",
+      "mcp__git__git_branch",
+      "mcp__git__git_add",
+      "mcp__git__git_create_branch",
+      "Read",
+      "Write",
+      "Edit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(terraform:*)"
+    ],
+    "deny": [],
+    "ask": [
+      "mcp__git__git_commit",
+      "mcp__git__git_checkout",
+      "mcp__git__git_reset",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
+      "Bash(git merge:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true
+}
