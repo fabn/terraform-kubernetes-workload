@@ -109,7 +109,7 @@ variable "service_type" {
   nullable    = true
 
   validation {
-    condition     = var.service_type == null || contains(["ClusterIP", "LoadBalancer", "NodePort"], var.service_type)
+    condition     = var.service_type == null ? true : contains(["ClusterIP", "LoadBalancer", "NodePort"], var.service_type)
     error_message = "service_type must be ClusterIP, LoadBalancer, NodePort, or null"
   }
 }
@@ -281,7 +281,7 @@ variable "anti_affinity" {
   nullable    = true
 
   validation {
-    condition     = var.anti_affinity == null || contains(["soft", "hard"], var.anti_affinity)
+    condition     = var.anti_affinity == null ? true : contains(["soft", "hard"], var.anti_affinity)
     error_message = "anti_affinity must be 'soft', 'hard', or null"
   }
 }
