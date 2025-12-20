@@ -35,12 +35,12 @@ resource "helm_release" "ingress_nginx" {
 
   values = [yamlencode({
     controller = {
-      hostPort = { enabled = true }
-      service  = { type = "ClusterIP" }
-      publishService = { enabled = false }
-      extraArgs = { "publish-status-address" = "localhost" }
+      hostPort             = { enabled = true }
+      service              = { type = "ClusterIP" }
+      publishService       = { enabled = false }
+      extraArgs            = { "publish-status-address" = "localhost" }
       ingressClassResource = { default = true }
-      admissionWebhooks = { enabled = false }
+      admissionWebhooks    = { enabled = false }
     }
   })]
 }
