@@ -37,6 +37,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        working-directory: tests
 
       - name: Run Unit Test
         run: terraform test
