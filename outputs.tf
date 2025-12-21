@@ -62,3 +62,8 @@ output "service_monitor" {
   description = "The ServiceMonitor manifest (null if not created)"
   value       = var.service_monitor_enabled && length(var.ports) > 0 ? module.service_monitor[0].manifest : null
 }
+
+output "sops_secrets" {
+  description = "Map of SOPS secrets created (key => secret name)"
+  value       = { for k, v in module.sops_secret : k => v.name }
+}

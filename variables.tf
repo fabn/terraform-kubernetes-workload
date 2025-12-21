@@ -426,3 +426,16 @@ variable "datadog_admission_controller" {
   type        = bool
   default     = true
 }
+
+# =============================================================================
+# SOPS Integration (Optional)
+# =============================================================================
+
+variable "sops_files" {
+  description = "List of SOPS encrypted files to decrypt and create as Kubernetes secrets. Each file creates a secret that is automatically added to the deployment's env_from."
+  type = list(object({
+    source_file = string
+    input_type  = optional(string) # "json", "yaml", "dotenv", "raw" - auto-detected by provider if null
+  }))
+  default = []
+}

@@ -13,6 +13,7 @@ A comprehensive Terraform module for deploying Kubernetes workloads with support
 - **Datadog**: Unified Service Tagging, logging, and admission controller integration
 - **ConfigMap**: Standalone ConfigMap with content-hash naming for automatic rollouts
 - **Secret**: Standalone Secret with content-hash naming for automatic rollouts
+- **SOPS**: Automatic decryption of SOPS-encrypted files and creation of Kubernetes secrets
 
 ## Usage
 
@@ -287,6 +288,36 @@ module "api" {
 | `datadog_check_id` | Built-in check ID | `string` | `null` |
 | `datadog_admission_controller` | Enable admission controller label | `bool` | `true` |
 
+### SOPS Integration
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `sops_files` | SOPS encrypted files to decrypt and create as secrets | `list(object)` | `[]` |
+
+Each object in `sops_files` accepts:
+- `source_file` (required): Path to the SOPS-encrypted file
+- `input_type` (optional): File type (`json`, `yaml`, `dotenv`, `raw`) - auto-detected if omitted
+
+Example:
+
+```hcl
+module "app" {
+  source = "fabn/workload/kubernetes"
+
+  namespace = "production"
+  name      = "my-app"
+  image     = "my-registry/app:v1.0.0"
+
+  # SOPS encrypted secrets - automatically decrypted and mounted as env
+  sops_files = [
+    { source_file = "${path.module}/secrets.enc.env" },
+    { source_file = "${path.module}/api-keys.enc.json" }
+  ]
+}
+```
+
+**Note**: Requires [SOPS](https://github.com/getsops/sops) and appropriate key configuration (e.g., `SOPS_AGE_KEY_FILE` environment variable).
+
 ## Outputs
 
 | Name | Description |
@@ -304,6 +335,7 @@ module "api" {
 | `hpa` | The HPA resource |
 | `pdb` | The PDB resource |
 | `service_monitor` | The ServiceMonitor manifest |
+| `sops_secrets` | Map of SOPS secrets created (key => secret name) |
 
 ## Standalone Submodules
 

@@ -20,4 +20,7 @@ module "workload" {
 
   # PDB
   pdb_enabled = var.pdb_enabled
+
+  # SOPS
+  sops_files = var.sops_files
 }

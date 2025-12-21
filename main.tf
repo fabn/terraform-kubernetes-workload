@@ -16,6 +16,26 @@ module "datadog" {
 }
 
 # =============================================================================
+# SOPS Secrets (Optional)
+# =============================================================================
+
+data "sops_file" "this" {
+  for_each    = local.sops_files_map
+  source_file = each.value.source_file
+  input_type  = each.value.input_type
+}
+
+module "sops_secret" {
+  for_each = local.sops_files_map
+  source   = "./modules/secret"
+
+  namespace   = local.namespace
+  name_prefix = "${var.name}-${each.key}"
+  data        = data.sops_file.this[each.key].data
+  labels      = local.labels
+}
+
+# =============================================================================
 # Namespace (Optional)
 # =============================================================================
 
@@ -82,9 +102,9 @@ resource "kubernetes_deployment_v1" "this" {
             }
           }
 
-          # Secret references as env
+          # Secret references as env (includes SOPS-generated secrets)
           dynamic "env_from" {
-            for_each = var.secret_refs
+            for_each = local.all_secret_refs
             content {
               secret_ref {
                 name = env_from.value

@@ -51,4 +51,17 @@ locals {
 
   # Resource limits/requests
   memory_limit = coalesce(var.memory_limits, var.memory_requests, "1Gi")
+
+  # SOPS files map for for_each (uses basename without extension as key)
+  # Handles multiple extensions like .enc.env, .enc.json, .enc.yaml
+  sops_files_map = {
+    for f in var.sops_files :
+    replace(basename(f.source_file), "/\\.(enc\\.)?(json|yaml|yml|env)$/", "") => f
+  }
+
+  # Names of SOPS-generated secrets
+  sops_secret_names = [for k, v in module.sops_secret : v.name]
+
+  # All secret refs (user-provided + SOPS-generated)
+  all_secret_refs = concat(var.secret_refs, local.sops_secret_names)
 }
