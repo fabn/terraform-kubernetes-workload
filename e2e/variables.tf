@@ -58,3 +58,12 @@ variable "pdb_enabled" {
   type        = bool
   default     = false
 }
+
+variable "sops_files" {
+  description = "SOPS encrypted files"
+  type = list(object({
+    source_file = string
+    input_type  = optional(string)
+  }))
+  default = []
+}

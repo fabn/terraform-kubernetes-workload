@@ -23,8 +23,13 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Install SOPS
+        uses: fabn/mozilla-sops-action@node20
+
       - name: Terraform Init
         run: terraform -chdir=e2e init
 
       - name: Terraform Test
         run: terraform -chdir=e2e test
+        env:
+          SOPS_AGE_KEY_FILE: ${{ github.workspace }}/e2e/sops/test.agekey

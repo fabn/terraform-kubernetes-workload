@@ -28,3 +28,7 @@ output "labels" {
 output "pdb" {
   value = module.workload.pdb
 }
+
+output "sops_secrets" {
+  value = module.workload.sops_secrets
+}
