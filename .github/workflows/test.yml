@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Run every Monday at 8:00 UTC to verify tests remain valid over time
+    - cron: '0 8 * * 1'
 
 jobs:
   lint:
