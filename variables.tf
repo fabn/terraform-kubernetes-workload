@@ -161,14 +161,23 @@ variable "ingress_acme_enabled" {
 # =============================================================================
 
 variable "canary" {
-  description = "Canary deployment configuration for nginx ingress controller"
+  description = "Canary deployment configuration for nginx ingress controller. Supports all nginx canary annotations."
   type = object({
-    enabled = bool
-    weight  = optional(number, 0)
+    enabled        = bool
+    weight         = optional(number, 0)
+    weight_total   = optional(number)
+    header         = optional(string, "canary")
+    header_value   = optional(string)
+    header_pattern = optional(string)
+    cookie         = optional(string, "canary")
   })
   default = {
     enabled = false
-    weight  = 0
+  }
+
+  validation {
+    condition     = !(var.canary.header_value != null && var.canary.header_pattern != null)
+    error_message = "Cannot specify both header_value and header_pattern. Use one or the other."
   }
 }
 
