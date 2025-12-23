@@ -229,13 +229,14 @@ variable "env_value_from" {
 variable "volumes" {
   description = "Volume definitions with mount configurations"
   type = list(object({
-    name       = string
-    mount_path = string
-    sub_path   = optional(string)
-    read_only  = optional(bool, false)
-    secret     = optional(string)
-    config_map = optional(string)
-    mode       = optional(string)
+    name                    = string
+    mount_path              = string
+    sub_path                = optional(string)
+    read_only               = optional(bool, false)
+    secret                  = optional(string)
+    config_map              = optional(string)
+    persistent_volume_claim = optional(string)
+    mode                    = optional(string)
   }))
   default = []
 }

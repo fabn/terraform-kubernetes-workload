@@ -282,7 +282,7 @@ resource "kubernetes_deployment_v1" "this" {
           }
         }
 
-        # Volumes from secrets/configmaps
+        # Volumes from secrets/configmaps/PVCs
         dynamic "volume" {
           for_each = var.volumes
           content {
@@ -301,6 +301,14 @@ resource "kubernetes_deployment_v1" "this" {
               content {
                 name         = config_map.value
                 default_mode = volume.value.mode
+              }
+            }
+
+            dynamic "persistent_volume_claim" {
+              for_each = volume.value.persistent_volume_claim != null ? [volume.value.persistent_volume_claim] : []
+              content {
+                claim_name = persistent_volume_claim.value
+                read_only  = volume.value.read_only
               }
             }
           }
