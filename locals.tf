@@ -16,10 +16,33 @@ locals {
   labels = merge(local.standard_labels, var.labels)
 
   # Canary annotations for nginx ingress controller
-  canary_annotations = var.canary.enabled ? {
-    "nginx.ingress.kubernetes.io/canary"        = "true"
-    "nginx.ingress.kubernetes.io/canary-weight" = tostring(var.canary.weight)
-  } : {}
+  # See: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#canary
+  canary_annotations = var.canary.enabled ? merge(
+    {
+      "nginx.ingress.kubernetes.io/canary" = "true"
+    },
+    # Weight-based routing
+    var.canary.weight > 0 ? {
+      "nginx.ingress.kubernetes.io/canary-weight" = tostring(var.canary.weight)
+    } : {},
+    var.canary.weight_total != null ? {
+      "nginx.ingress.kubernetes.io/canary-weight-total" = tostring(var.canary.weight_total)
+    } : {},
+    # Header-based routing
+    var.canary.header != null ? {
+      "nginx.ingress.kubernetes.io/canary-by-header" = var.canary.header
+    } : {},
+    var.canary.header_value != null ? {
+      "nginx.ingress.kubernetes.io/canary-by-header-value" = var.canary.header_value
+    } : {},
+    var.canary.header_pattern != null ? {
+      "nginx.ingress.kubernetes.io/canary-by-header-pattern" = var.canary.header_pattern
+    } : {},
+    # Cookie-based routing
+    var.canary.cookie != null ? {
+      "nginx.ingress.kubernetes.io/canary-by-cookie" = var.canary.cookie
+    } : {},
+  ) : {}
 
   # ACME TLS annotation
   acme_annotations = var.ingress_acme_enabled && var.ingress_tls_enabled ? {
