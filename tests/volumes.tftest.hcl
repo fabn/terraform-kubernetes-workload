@@ -110,3 +110,50 @@ run "subpath_mount" {
     error_message = "SubPath should be settings.yaml"
   }
 }
+
+# Test: PersistentVolumeClaim volume
+run "pvc_volume" {
+  command = plan
+
+  variables {
+    volumes = [{
+      name                    = "data"
+      mount_path              = "/data"
+      persistent_volume_claim = "app-data-pvc"
+    }]
+  }
+
+  assert {
+    condition     = length(kubernetes_deployment_v1.this.spec[0].template[0].spec[0].volume) == 1
+    error_message = "One volume should be configured"
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].volume[0].persistent_volume_claim[0].claim_name == "app-data-pvc"
+    error_message = "PVC claim name should be app-data-pvc"
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].volume_mount[0].mount_path == "/data"
+    error_message = "Volume mount path should be /data"
+  }
+}
+
+# Test: PersistentVolumeClaim volume with read_only
+run "pvc_volume_readonly" {
+  command = plan
+
+  variables {
+    volumes = [{
+      name                    = "data"
+      mount_path              = "/data"
+      persistent_volume_claim = "app-data-pvc"
+      read_only               = true
+    }]
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].volume[0].persistent_volume_claim[0].read_only == true
+    error_message = "PVC should be mounted read-only"
+  }
+}
