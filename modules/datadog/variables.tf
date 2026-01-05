@@ -39,9 +39,12 @@ variable "log_config" {
 }
 
 variable "checks" {
-  description = "Datadog autodiscovery checks configuration (custom checks)"
-  type        = map(any)
-  default     = {}
+  description = "Datadog autodiscovery checks (AD v2 format). Map of check_name => { instances = [...], init_config = {} }"
+  type = map(object({
+    instances   = list(any)
+    init_config = optional(map(any), {})
+  }))
+  default = {}
 }
 
 variable "check_id" {

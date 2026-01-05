@@ -57,11 +57,20 @@ locals {
     "ad.datadoghq.com/${var.container_name}.logs" = jsonencode([local.log_config_object])
   } : {}
 
-  # Autodiscovery check annotations
+  # Autodiscovery check annotations (AD v2 format)
   # https://docs.datadoghq.com/containers/kubernetes/integrations/
   check_annotations = var.check_id != null || length(var.checks) > 0 ? {
-    "ad.datadoghq.com/${var.container_name}.check_names"  = jsonencode(var.check_id != null ? [var.check_id] : keys(var.checks))
-    "ad.datadoghq.com/${var.container_name}.init_configs" = jsonencode(var.check_id != null ? [{}] : [for _ in var.checks : {}])
-    "ad.datadoghq.com/${var.container_name}.instances"    = jsonencode(var.check_id != null ? [{}] : values(var.checks))
+    "ad.datadoghq.com/${var.container_name}.checks" = jsonencode(
+      var.check_id != null ? {
+        (var.check_id) = {
+          instances = [{}]
+        }
+        } : {
+        for name, config in var.checks : name => merge(
+          { instances = config.instances },
+          length(coalesce(config.init_config, {})) > 0 ? { init_config = config.init_config } : {}
+        )
+      }
+    )
   } : {}
 }

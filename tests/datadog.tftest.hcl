@@ -133,7 +133,7 @@ run "datadog_check_id" {
   }
 }
 
-# Test: Datadog with custom checks
+# Test: Datadog with custom checks (AD v2 format)
 run "datadog_custom_checks" {
   command = plan
 
@@ -141,8 +141,12 @@ run "datadog_custom_checks" {
     datadog_enabled = true
     datadog_checks = {
       my_custom_check = {
-        host = "%%host%%"
-        port = 9090
+        instances = [
+          {
+            host = "%%host%%"
+            port = 9090
+          }
+        ]
       }
     }
   }
@@ -150,5 +154,50 @@ run "datadog_custom_checks" {
   assert {
     condition     = length(module.datadog) == 1
     error_message = "Datadog module should be created with custom checks"
+  }
+
+  # Verify v2 format annotation exists
+  assert {
+    condition     = can(module.datadog[0].pod_annotations["ad.datadoghq.com/test-app.checks"])
+    error_message = "Should generate .checks annotation (v2 format)"
+  }
+}
+
+# Test: Datadog checks v2 format validation
+run "datadog_checks_v2_format" {
+  command = plan
+
+  variables {
+    datadog_enabled = true
+    datadog_checks = {
+      mysql = {
+        instances = [
+          { host = "db.example.com", port = 3306 }
+        ]
+      }
+    }
+  }
+
+  assert {
+    condition     = length(module.datadog) == 1
+    error_message = "Datadog module should be created with v2 checks"
+  }
+
+  # Verify annotation contains instances (init_config omitted when empty)
+  assert {
+    condition     = can(regex("instances", module.datadog[0].pod_annotations["ad.datadoghq.com/test-app.checks"]))
+    error_message = "Checks annotation should contain instances"
+  }
+
+  # Verify init_config is NOT present when empty
+  assert {
+    condition     = !can(regex("init_config", module.datadog[0].pod_annotations["ad.datadoghq.com/test-app.checks"]))
+    error_message = "Checks annotation should NOT contain init_config when empty"
+  }
+
+  # Verify the check name appears in the annotation
+  assert {
+    condition     = can(regex("mysql", module.datadog[0].pod_annotations["ad.datadoghq.com/test-app.checks"]))
+    error_message = "Checks annotation should contain the check name 'mysql'"
   }
 }
