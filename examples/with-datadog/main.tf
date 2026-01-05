@@ -51,11 +51,18 @@ module "api" {
   # which triggers automatic injection of DD_* environment variables
   datadog_admission_controller = true
 
-  # Custom Datadog checks (optional)
+  # Custom Datadog checks (optional, AD v2 format)
   # datadog_checks = {
-  #   my_custom_check = {
-  #     host = "%%host%%"
-  #     port = 9090
+  #   mysql = {
+  #     instances = [
+  #       {
+  #         host     = "db.example.com"
+  #         port     = 3306
+  #         username = "datadog"
+  #         password = "secret"
+  #       }
+  #     ]
+  #     # init_config = {} # optional, defaults to {}
   #   }
   # }
 
