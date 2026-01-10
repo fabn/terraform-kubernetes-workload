@@ -145,13 +145,13 @@ run "sidecar_containers" {
         name    = "logging-sidecar"
         image   = "busybox:latest"
         command = ["/bin/sh"]
-        args    = ["-c", "while true; do echo 'Logging...'; sleep 30; done"]
+        args    = ["-c", "while true; do echo 'Logging...'; sleep 5; done"]
       },
       {
         name    = "metrics-sidecar"
         image   = "busybox:latest"
         command = ["/bin/sh"]
-        args    = ["-c", "while true; do echo 'Metrics...'; sleep 30; done"]
+        args    = ["-c", "while true; do echo 'Metrics...'; sleep 5; done"]
         ports = {
           metrics = 9090
         }

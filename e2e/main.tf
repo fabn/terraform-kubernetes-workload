@@ -21,6 +21,9 @@ module "workload" {
   # PDB
   pdb_enabled = var.pdb_enabled
 
+  # Sidecar containers
+  sidecar_containers = var.sidecar_containers
+
   # SOPS
   sops_files = var.sops_files
 }
