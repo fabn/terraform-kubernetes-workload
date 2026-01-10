@@ -116,7 +116,7 @@ run "sidecar_inherits_envs" {
 
   variables {
     envs = {
-      APP_ENV = "production"
+      APP_ENV   = "production"
       LOG_LEVEL = "info"
     }
     sidecar_containers = [{
