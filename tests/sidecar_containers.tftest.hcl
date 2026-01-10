@@ -203,3 +203,118 @@ run "sidecar_inherits_working_dir" {
     error_message = "Sidecar should inherit working directory"
   }
 }
+
+# Test: Sidecar with ports
+run "sidecar_with_ports" {
+  command = plan
+
+  variables {
+    sidecar_containers = [{
+      name  = "metrics-sidecar"
+      image = "prom/nginx-exporter:latest"
+      ports = {
+        metrics = 9113
+      }
+    }]
+  }
+
+  assert {
+    condition     = length(kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[1].port) == 1
+    error_message = "Sidecar should have one port configured"
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[1].port[0].container_port == 9113
+    error_message = "Sidecar port should be 9113"
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[1].port[0].name == "metrics"
+    error_message = "Sidecar port name should be metrics"
+  }
+}
+
+# Test: Sidecar ports merged into service
+run "sidecar_ports_in_service" {
+  command = plan
+
+  variables {
+    ports = {
+      http = 80
+    }
+    sidecar_containers = [{
+      name  = "metrics-sidecar"
+      image = "prom/nginx-exporter:latest"
+      ports = {
+        metrics = 9113
+      }
+    }]
+  }
+
+  assert {
+    condition     = length(kubernetes_service_v1.this) == 1
+    error_message = "Service should be created when ports exist"
+  }
+
+  assert {
+    condition     = length(kubernetes_service_v1.this[0].spec[0].port) == 2
+    error_message = "Service should have two ports (main + sidecar)"
+  }
+
+  assert {
+    condition     = contains([for p in kubernetes_service_v1.this[0].spec[0].port : p.name], "http")
+    error_message = "Service should include main container http port"
+  }
+
+  assert {
+    condition     = contains([for p in kubernetes_service_v1.this[0].spec[0].port : p.name], "metrics")
+    error_message = "Service should include sidecar metrics port"
+  }
+}
+
+# Test: Multiple sidecars with different ports
+run "multiple_sidecars_with_ports" {
+  command = plan
+
+  variables {
+    ports = {
+      http = 8080
+    }
+    sidecar_containers = [
+      {
+        name  = "metrics-exporter"
+        image = "prom/nginx-exporter:latest"
+        ports = {
+          metrics = 9113
+        }
+      },
+      {
+        name  = "debug-server"
+        image = "debug:latest"
+        ports = {
+          debug = 9999
+        }
+      }
+    ]
+  }
+
+  assert {
+    condition     = length(kubernetes_service_v1.this[0].spec[0].port) == 3
+    error_message = "Service should have three ports (main + 2 sidecars)"
+  }
+
+  assert {
+    condition     = contains([for p in kubernetes_service_v1.this[0].spec[0].port : p.port], 8080)
+    error_message = "Service should include main container port 8080"
+  }
+
+  assert {
+    condition     = contains([for p in kubernetes_service_v1.this[0].spec[0].port : p.port], 9113)
+    error_message = "Service should include metrics port 9113"
+  }
+
+  assert {
+    condition     = contains([for p in kubernetes_service_v1.this[0].spec[0].port : p.port], 9999)
+    error_message = "Service should include debug port 9999"
+  }
+}

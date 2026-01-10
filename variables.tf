@@ -339,6 +339,7 @@ variable "sidecar_containers" {
     command = optional(list(string))
     args    = optional(list(string))
     image   = optional(string)
+    ports   = optional(map(number), {})
   }))
   default = []
 }

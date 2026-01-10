@@ -248,6 +248,16 @@ resource "kubernetes_deployment_v1" "this" {
             args        = container.value.args
             working_dir = var.working_dir
 
+            # Ports
+            dynamic "port" {
+              for_each = container.value.ports
+              content {
+                container_port = port.value
+                name           = port.key
+                protocol       = "TCP"
+              }
+            }
+
             # Inherit environment variables
             dynamic "env" {
               for_each = var.envs
@@ -414,7 +424,7 @@ resource "kubernetes_deployment_v1" "this" {
 # =============================================================================
 
 resource "kubernetes_service_v1" "this" {
-  count = var.service_type != null && length(var.ports) > 0 ? 1 : 0
+  count = var.service_type != null && length(local.all_ports) > 0 ? 1 : 0
 
   metadata {
     namespace = local.namespace
@@ -427,7 +437,7 @@ resource "kubernetes_service_v1" "this" {
     selector = local.selector_labels
 
     dynamic "port" {
-      for_each = var.ports
+      for_each = local.all_ports
       content {
         name        = port.key
         port        = port.value

@@ -19,7 +19,8 @@ module "app" {
 
   # Sidecar containers
   # Each sidecar inherits environment variables, volume mounts, and working directory
-  # from the main container configuration
+  # from the main container configuration. Sidecar ports are merged with main
+  # container ports and exposed in the service.
   sidecar_containers = [
     {
       name    = "logging-sidecar"
@@ -31,6 +32,10 @@ module "app" {
       name  = "metrics-exporter"
       image = "nginx/nginx-prometheus-exporter:latest"
       args  = ["-nginx.scrape-uri=http://localhost:80/stub_status"]
+      # Expose metrics port - will be merged into service
+      ports = {
+        metrics = 9113
+      }
     },
     {
       # Sidecar using the same image as the main container

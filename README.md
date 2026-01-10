@@ -151,6 +151,10 @@ module "api" {
       name  = "metrics-exporter"
       image = "nginx/nginx-prometheus-exporter:latest"
       args  = ["-nginx.scrape-uri=http://localhost:80/stub_status"]
+      # Sidecar ports are merged into the service
+      ports = {
+        metrics = 9113
+      }
     }
   ]
 
