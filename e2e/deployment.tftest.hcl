@@ -130,3 +130,57 @@ run "pdb_enabled" {
     error_message = "PDB max_unavailable should be 1 by default"
   }
 }
+
+# -----------------------------------------------------------------------------
+# Test: Sidecar containers
+# -----------------------------------------------------------------------------
+run "sidecar_containers" {
+  variables {
+    name = "with-sidecars"
+    sidecar_containers = [
+      {
+        name    = "logging-sidecar"
+        image   = "busybox:latest"
+        command = ["/bin/sh"]
+        args    = ["-c", "while true; do echo 'Logging...'; sleep 30; done"]
+      },
+      {
+        name    = "metrics-sidecar"
+        image   = "busybox:latest"
+        command = ["/bin/sh"]
+        args    = ["-c", "while true; do echo 'Metrics...'; sleep 30; done"]
+      }
+    ]
+  }
+
+  assert {
+    condition     = length(output.deployment.spec[0].template[0].spec[0].container) == 3
+    error_message = "Should have main container plus two sidecars"
+  }
+
+  assert {
+    condition     = output.deployment.spec[0].template[0].spec[0].container[0].name == "with-sidecars"
+    error_message = "First container should be the main container"
+  }
+
+  assert {
+    condition     = output.deployment.spec[0].template[0].spec[0].container[1].name == "logging-sidecar"
+    error_message = "Second container should be logging-sidecar"
+  }
+
+  assert {
+    condition     = output.deployment.spec[0].template[0].spec[0].container[2].name == "metrics-sidecar"
+    error_message = "Third container should be metrics-sidecar"
+  }
+
+  assert {
+    condition     = output.deployment.spec[0].template[0].spec[0].container[1].image == "busybox:latest"
+    error_message = "Logging sidecar should use busybox:latest image"
+  }
+
+  assert {
+    condition     = output.deployment.spec[0].template[0].spec[0].container[2].image == "busybox:latest"
+    error_message = "Metrics sidecar should use busybox:latest image"
+  }
+}
+
