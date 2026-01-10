@@ -238,6 +238,57 @@ resource "kubernetes_deployment_v1" "this" {
           }
         }
 
+        # Sidecar containers
+        dynamic "container" {
+          for_each = var.sidecar_containers
+          content {
+            name        = container.value.name
+            image       = coalesce(container.value.image, var.image)
+            command     = container.value.command
+            args        = container.value.args
+            working_dir = var.working_dir
+
+            # Ports
+            dynamic "port" {
+              for_each = container.value.ports
+              content {
+                container_port = port.value
+                name           = port.key
+                protocol       = "TCP"
+              }
+            }
+
+            # Inherit environment variables
+            dynamic "env" {
+              for_each = var.envs
+              content {
+                name  = env.key
+                value = env.value
+              }
+            }
+
+            # Inherit volume mounts
+            dynamic "volume_mount" {
+              for_each = var.volumes
+              content {
+                mount_path = volume_mount.value.mount_path
+                name       = volume_mount.value.name
+                sub_path   = volume_mount.value.sub_path
+                read_only  = volume_mount.value.read_only
+              }
+            }
+
+            # Inherit emptyDir mounts
+            dynamic "volume_mount" {
+              for_each = var.empty_dirs
+              content {
+                name       = "${basename(volume_mount.value)}-empty-dir"
+                mount_path = volume_mount.value
+              }
+            }
+          }
+        }
+
         # Image pull secrets
         dynamic "image_pull_secrets" {
           for_each = var.image_pull_secrets != null ? [1] : []
@@ -373,7 +424,7 @@ resource "kubernetes_deployment_v1" "this" {
 # =============================================================================
 
 resource "kubernetes_service_v1" "this" {
-  count = var.service_type != null && length(var.ports) > 0 ? 1 : 0
+  count = var.service_type != null && length(local.all_ports) > 0 ? 1 : 0
 
   metadata {
     namespace = local.namespace
@@ -386,7 +437,7 @@ resource "kubernetes_service_v1" "this" {
     selector = local.selector_labels
 
     dynamic "port" {
-      for_each = var.ports
+      for_each = local.all_ports
       content {
         name        = port.key
         port        = port.value

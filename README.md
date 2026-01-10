@@ -139,6 +139,25 @@ module "api" {
     command = ["bin/rails", "db:migrate"]
   }
 
+  # Sidecar containers for logging and monitoring
+  sidecar_containers = [
+    {
+      name    = "logging-sidecar"
+      image   = "fluent/fluentd:latest"
+      command = ["fluentd"]
+      args    = ["-c", "/fluentd/etc/fluent.conf"]
+    },
+    {
+      name  = "metrics-exporter"
+      image = "nginx/nginx-prometheus-exporter:latest"
+      args  = ["-nginx.scrape-uri=http://localhost:80/stub_status"]
+      # Sidecar ports are merged into the service
+      ports = {
+        metrics = 9113
+      }
+    }
+  ]
+
   # HPA
   hpa_enabled = true
   hpa_config = {
@@ -265,6 +284,12 @@ module "api" {
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
 | `init_container` | Init container configuration | `object` | `null` |
+
+### Sidecar Containers
+
+| Name | Description | Type | Default |
+|------|-------------|------|---------|
+| `sidecar_containers` | List of sidecar containers | `list(object)` | `[]` |
 
 ### Optional Features
 

@@ -75,6 +75,14 @@ locals {
   # Resource limits/requests
   memory_limit = coalesce(var.memory_limits, var.memory_requests, "1Gi")
 
+  # Merge all ports from main container and sidecars for service exposure
+  all_ports = merge(
+    var.ports,
+    flatten([
+      for sidecar in var.sidecar_containers : sidecar.ports
+    ])...
+  )
+
   # SOPS files map for for_each (uses basename without extension as key)
   # Handles multiple extensions like .enc.env, .enc.json, .enc.yaml
   sops_files_map = {

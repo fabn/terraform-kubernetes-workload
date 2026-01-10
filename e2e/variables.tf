@@ -67,3 +67,15 @@ variable "sops_files" {
   }))
   default = []
 }
+
+variable "sidecar_containers" {
+  description = "List of sidecar containers to run alongside the main container"
+  type = list(object({
+    name    = string
+    command = optional(list(string))
+    args    = optional(list(string))
+    image   = optional(string)
+    ports   = optional(map(number), {})
+  }))
+  default = []
+}
