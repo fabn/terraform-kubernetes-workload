@@ -66,6 +66,34 @@ module "api" {
 }
 ```
 
+### Behind an AWS ALB (EKS Auto Mode / AWS Load Balancer Controller)
+
+TLS terminates on the ALB (e.g. with an ACM certificate wired into the
+IngressClass), so setting `alb` suppresses in-cluster TLS (`spec.tls`) and the
+ACME annotation, and adds the ALB listener/health check annotations instead:
+
+```hcl
+module "api" {
+  source  = "fabn/workload/kubernetes"
+  version = "~> 0.6"
+
+  namespace = "production"
+  name      = "my-api"
+  image     = "my-registry/api:v1.0.0"
+  ports     = { http = 8080 }
+
+  ingress_hostnames  = ["api.example.com"]
+  ingress_class_name = "external"
+
+  alb = {
+    # Optional: name of the shared (group) ALB. Every Ingress of the group
+    # must carry the same value. Only honored at ALB creation time.
+    load_balancer_name = "my-cluster-external"
+    # Defaults: listen_ports = [{ HTTPS = 443 }], healthcheck_path = "/"
+  }
+}
+```
+
 ### With Datadog Integration
 
 ```hcl
@@ -233,6 +261,7 @@ module "api" {
 | `ingress_tls_secret_name` | TLS secret name | `string` | `null` |
 | `ingress_class_name` | Ingress class name | `string` | `null` |
 | `ingress_acme_enabled` | Enable ACME annotation | `bool` | `true` |
+| `alb` | AWS ALB mode: adds listener/health check annotations, suppresses in-cluster TLS and ACME | `object` | `null` |
 
 ### Canary Deployment
 

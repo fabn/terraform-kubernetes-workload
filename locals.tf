@@ -44,13 +44,27 @@ locals {
     } : {},
   ) : {}
 
-  # ACME TLS annotation
-  acme_annotations = var.ingress_acme_enabled && var.ingress_tls_enabled ? {
+  # ACME TLS annotation. Suppressed on ALB: TLS terminates on the load
+  # balancer, no in-cluster certificate is involved.
+  acme_annotations = var.ingress_acme_enabled && var.ingress_tls_enabled && var.alb == null ? {
     "kubernetes.io/tls-acme" = "true"
   } : {}
 
-  # Final ingress annotations
+  # AWS ALB annotations (EKS Auto Mode / AWS Load Balancer Controller)
+  alb_annotations = var.alb != null ? merge(
+    {
+      "alb.ingress.kubernetes.io/listen-ports"     = jsonencode(var.alb.listen_ports)
+      "alb.ingress.kubernetes.io/healthcheck-path" = var.alb.healthcheck_path
+    },
+    var.alb.load_balancer_name != null ? {
+      "alb.ingress.kubernetes.io/load-balancer-name" = var.alb.load_balancer_name
+    } : {},
+  ) : {}
+
+  # Final ingress annotations. ALB defaults first so user-provided
+  # annotations can override them.
   ingress_annotations = merge(
+    local.alb_annotations,
     var.ingress_annotations,
     local.acme_annotations,
     local.canary_annotations

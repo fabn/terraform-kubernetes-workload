@@ -156,6 +156,17 @@ variable "ingress_acme_enabled" {
   default     = true
 }
 
+variable "alb" {
+  description = "Configure the Ingress for an AWS ALB (EKS Auto Mode or AWS Load Balancer Controller). TLS terminates on the ALB, so in-cluster TLS (spec.tls) and the ACME annotation are suppressed. Set to {} to accept all defaults. On shared (group) ALBs every Ingress of the group must carry the same load_balancer_name."
+  type = object({
+    load_balancer_name = optional(string)
+    healthcheck_path   = optional(string, "/")
+    listen_ports       = optional(list(map(number)), [{ HTTPS = 443 }])
+  })
+  default  = null
+  nullable = true
+}
+
 # =============================================================================
 # Canary Deployment (nginx-ingress)
 # =============================================================================

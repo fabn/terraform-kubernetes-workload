@@ -485,8 +485,9 @@ resource "kubernetes_ingress_v1" "this" {
       }
     }
 
+    # No in-cluster TLS on ALB: termination happens on the load balancer
     dynamic "tls" {
-      for_each = var.ingress_tls_enabled ? [1] : []
+      for_each = var.ingress_tls_enabled && var.alb == null ? [1] : []
       content {
         hosts       = var.ingress_hostnames
         secret_name = local.tls_secret_name
