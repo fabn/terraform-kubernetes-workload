@@ -306,9 +306,12 @@ resource "kubernetes_deployment_v1" "this" {
         # Service account
         service_account_name = var.service_account_name
 
-        # Pod anti-affinity (spread) and/or node affinity (placement)
+        # Simple exact-match node selector; complements the affinity rules below.
+        node_selector = var.node_selector
+
+        # Pod anti-affinity (spread), pod affinity (co-location), node affinity (placement)
         dynamic "affinity" {
-          for_each = var.anti_affinity != null || var.node_affinity != null ? [1] : []
+          for_each = var.anti_affinity != null || var.node_affinity != null || var.pod_affinity != null ? [1] : []
           content {
             dynamic "pod_anti_affinity" {
               for_each = var.anti_affinity != null ? [1] : []
@@ -372,6 +375,58 @@ resource "kubernetes_deployment_v1" "this" {
                         key      = pref.value.key
                         operator = pref.value.operator
                         values   = pref.value.values
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            dynamic "pod_affinity" {
+              for_each = var.pod_affinity != null ? [1] : []
+              content {
+                # Hard co-location terms.
+                dynamic "required_during_scheduling_ignored_during_execution" {
+                  for_each = var.pod_affinity.required
+                  iterator = term
+                  content {
+                    topology_key = term.value.topology_key
+                    namespaces   = term.value.namespaces
+                    label_selector {
+                      match_labels = term.value.match_labels
+                      dynamic "match_expressions" {
+                        for_each = term.value.match_expressions
+                        iterator = expr
+                        content {
+                          key      = expr.value.key
+                          operator = expr.value.operator
+                          values   = expr.value.values
+                        }
+                      }
+                    }
+                  }
+                }
+
+                # Soft, weighted co-location terms.
+                dynamic "preferred_during_scheduling_ignored_during_execution" {
+                  for_each = var.pod_affinity.preferred
+                  iterator = term
+                  content {
+                    weight = term.value.weight
+                    pod_affinity_term {
+                      topology_key = term.value.topology_key
+                      namespaces   = term.value.namespaces
+                      label_selector {
+                        match_labels = term.value.match_labels
+                        dynamic "match_expressions" {
+                          for_each = term.value.match_expressions
+                          iterator = expr
+                          content {
+                            key      = expr.value.key
+                            operator = expr.value.operator
+                            values   = expr.value.values
+                          }
+                        }
                       }
                     }
                   }

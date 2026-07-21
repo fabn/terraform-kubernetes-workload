@@ -365,6 +365,40 @@ variable "node_affinity" {
   }
 }
 
+variable "node_selector" {
+  description = "Optional exact-match node selector (label => value). Simplest placement constraint; use node_affinity for set-based operators or preferences."
+  type        = map(string)
+  default     = null
+}
+
+variable "pod_affinity" {
+  description = "Optional pod affinity (co-location). `required`/`preferred` terms, each a topology_key plus a label selector (match_labels and/or set-based match_expressions), optionally scoped to namespaces. `preferred` terms carry a weight."
+  type = object({
+    required = optional(list(object({
+      topology_key = string
+      namespaces   = optional(list(string))
+      match_labels = optional(map(string), {})
+      match_expressions = optional(list(object({
+        key      = string
+        operator = string
+        values   = optional(list(string), [])
+      })), [])
+    })), [])
+    preferred = optional(list(object({
+      weight       = number
+      topology_key = string
+      namespaces   = optional(list(string))
+      match_labels = optional(map(string), {})
+      match_expressions = optional(list(object({
+        key      = string
+        operator = string
+        values   = optional(list(string), [])
+      })), [])
+    })), [])
+  })
+  default = null
+}
+
 # =============================================================================
 # Labels and Annotations
 # =============================================================================
