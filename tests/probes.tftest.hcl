@@ -89,3 +89,35 @@ run "custom_probe_port" {
     error_message = "Probe port should be metrics"
   }
 }
+
+# Test: timeout/threshold tuning is applied per probe group
+run "probe_tuning" {
+  command = plan
+
+  variables {
+    http_probe_path                 = "/health"
+    startup_probe_path              = "/health/startup"
+    ports                           = { http = 8080 }
+    startup_probe_timeout_seconds   = 5
+    startup_probe_failure_threshold = 30
+    probe_timeout_seconds           = 3
+    probe_failure_threshold         = 5
+  }
+
+  assert {
+    condition = (
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].startup_probe[0].timeout_seconds == 5 &&
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].startup_probe[0].failure_threshold == 30
+    )
+    error_message = "Startup probe should use its own timeout/threshold"
+  }
+
+  assert {
+    condition = (
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].liveness_probe[0].timeout_seconds == 3 &&
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].liveness_probe[0].failure_threshold == 5 &&
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].readiness_probe[0].timeout_seconds == 3
+    )
+    error_message = "Liveness/readiness probes should share the probe_* timeout/threshold"
+  }
+}
