@@ -177,6 +177,8 @@ resource "kubernetes_deployment_v1" "this" {
           dynamic "startup_probe" {
             for_each = length(compact([var.startup_probe_path, var.http_probe_path])) > 0 ? [1] : []
             content {
+              timeout_seconds   = var.startup_probe_timeout_seconds
+              failure_threshold = var.startup_probe_failure_threshold
               http_get {
                 path = coalesce(var.startup_probe_path, var.http_probe_path)
                 port = var.probe_port
@@ -188,6 +190,8 @@ resource "kubernetes_deployment_v1" "this" {
           dynamic "liveness_probe" {
             for_each = var.http_probe_path != null ? [1] : []
             content {
+              timeout_seconds   = var.probe_timeout_seconds
+              failure_threshold = var.probe_failure_threshold
               http_get {
                 path = var.http_probe_path
                 port = var.probe_port
@@ -199,6 +203,8 @@ resource "kubernetes_deployment_v1" "this" {
           dynamic "readiness_probe" {
             for_each = var.http_probe_path != null ? [1] : []
             content {
+              timeout_seconds   = var.probe_timeout_seconds
+              failure_threshold = var.probe_failure_threshold
               http_get {
                 path = var.http_probe_path
                 port = var.probe_port

@@ -291,6 +291,38 @@ variable "probe_port" {
   default     = "http"
 }
 
+# Probe tuning. All null by default, so the Kubernetes defaults apply
+# (timeoutSeconds 1, failureThreshold 3). The startup probe is tuned
+# separately from the shared liveness/readiness probe because a cold boot
+# often needs a laxer startup budget than steady-state health checks.
+variable "startup_probe_timeout_seconds" {
+  description = "startupProbe timeoutSeconds (null = Kubernetes default of 1)."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
+variable "startup_probe_failure_threshold" {
+  description = "startupProbe failureThreshold (null = Kubernetes default of 3)."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
+variable "probe_timeout_seconds" {
+  description = "liveness/readiness probe timeoutSeconds (null = Kubernetes default of 1)."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
+variable "probe_failure_threshold" {
+  description = "liveness/readiness probe failureThreshold (null = Kubernetes default of 3)."
+  type        = number
+  default     = null
+  nullable    = true
+}
+
 # =============================================================================
 # Pod Scheduling
 # =============================================================================
