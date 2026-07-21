@@ -339,6 +339,32 @@ variable "anti_affinity" {
   }
 }
 
+variable "node_affinity" {
+  description = "Optional node affinity for placement. `required` match expressions are ANDed into one hard node-selector term; `preferred` are soft, each a single weighted match expression. Example: require capacity-type In [spot] and instance-category NotIn [t], prefer arch In [arm64]."
+  type = object({
+    required = optional(list(object({
+      key      = string
+      operator = string
+      values   = optional(list(string), [])
+    })), [])
+    preferred = optional(list(object({
+      weight   = number
+      key      = string
+      operator = string
+      values   = optional(list(string), [])
+    })), [])
+  })
+  default = null
+
+  validation {
+    condition = var.node_affinity == null ? true : alltrue([
+      for e in concat(var.node_affinity.required, var.node_affinity.preferred) :
+      contains(["In", "NotIn", "Exists", "DoesNotExist", "Gt", "Lt"], e.operator)
+    ])
+    error_message = "node_affinity operators must be one of In, NotIn, Exists, DoesNotExist, Gt, Lt."
+  }
+}
+
 # =============================================================================
 # Labels and Annotations
 # =============================================================================
