@@ -306,31 +306,73 @@ resource "kubernetes_deployment_v1" "this" {
         # Service account
         service_account_name = var.service_account_name
 
-        # Pod anti-affinity
+        # Pod anti-affinity (spread) and/or node affinity (placement)
         dynamic "affinity" {
-          for_each = var.anti_affinity != null ? [1] : []
+          for_each = var.anti_affinity != null || var.node_affinity != null ? [1] : []
           content {
-            pod_anti_affinity {
-              # Hard anti-affinity
-              dynamic "required_during_scheduling_ignored_during_execution" {
-                for_each = var.anti_affinity == "hard" ? [1] : []
-                content {
-                  topology_key = "kubernetes.io/hostname"
-                  label_selector {
-                    match_labels = local.selector_labels
-                  }
-                }
-              }
-
-              # Soft anti-affinity
-              dynamic "preferred_during_scheduling_ignored_during_execution" {
-                for_each = var.anti_affinity == "soft" ? [1] : []
-                content {
-                  weight = 1
-                  pod_affinity_term {
+            dynamic "pod_anti_affinity" {
+              for_each = var.anti_affinity != null ? [1] : []
+              content {
+                # Hard anti-affinity
+                dynamic "required_during_scheduling_ignored_during_execution" {
+                  for_each = var.anti_affinity == "hard" ? [1] : []
+                  content {
                     topology_key = "kubernetes.io/hostname"
                     label_selector {
                       match_labels = local.selector_labels
+                    }
+                  }
+                }
+
+                # Soft anti-affinity
+                dynamic "preferred_during_scheduling_ignored_during_execution" {
+                  for_each = var.anti_affinity == "soft" ? [1] : []
+                  content {
+                    weight = 1
+                    pod_affinity_term {
+                      topology_key = "kubernetes.io/hostname"
+                      label_selector {
+                        match_labels = local.selector_labels
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            dynamic "node_affinity" {
+              for_each = var.node_affinity != null ? [1] : []
+              content {
+                # Hard constraints: all `required` expressions ANDed in one term.
+                dynamic "required_during_scheduling_ignored_during_execution" {
+                  for_each = length(var.node_affinity.required) > 0 ? [1] : []
+                  content {
+                    node_selector_term {
+                      dynamic "match_expressions" {
+                        for_each = var.node_affinity.required
+                        iterator = expr
+                        content {
+                          key      = expr.value.key
+                          operator = expr.value.operator
+                          values   = expr.value.values
+                        }
+                      }
+                    }
+                  }
+                }
+
+                # Soft preferences: each a single weighted match expression.
+                dynamic "preferred_during_scheduling_ignored_during_execution" {
+                  for_each = var.node_affinity.preferred
+                  iterator = pref
+                  content {
+                    weight = pref.value.weight
+                    preference {
+                      match_expressions {
+                        key      = pref.value.key
+                        operator = pref.value.operator
+                        values   = pref.value.values
+                      }
                     }
                   }
                 }
