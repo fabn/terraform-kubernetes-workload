@@ -399,6 +399,61 @@ variable "pod_affinity" {
   default = null
 }
 
+variable "pod_anti_affinity" {
+  description = "Optional raw pod anti-affinity (spread) rules, forwarded verbatim to the manifest. Same shape as `pod_affinity`: `required`/`preferred` terms, each a `topology_key` plus a label selector (`match_labels` and/or set-based `match_expressions`), optionally scoped to namespaces; `preferred` terms carry a weight. Additive to the `anti_affinity` shorthand — both render into the same `pod_anti_affinity` block when set together."
+  type = object({
+    required = optional(list(object({
+      topology_key = string
+      namespaces   = optional(list(string))
+      match_labels = optional(map(string), {})
+      match_expressions = optional(list(object({
+        key      = string
+        operator = string
+        values   = optional(list(string), [])
+      })), [])
+    })), [])
+    preferred = optional(list(object({
+      weight       = number
+      topology_key = string
+      namespaces   = optional(list(string))
+      match_labels = optional(map(string), {})
+      match_expressions = optional(list(object({
+        key      = string
+        operator = string
+        values   = optional(list(string), [])
+      })), [])
+    })), [])
+  })
+  default = null
+}
+
+variable "topology_spread_constraints" {
+  description = "Optional topology spread constraints for even pod distribution across topology domains (e.g. zones, nodes). Each entry sets `max_skew`, `topology_key` and `when_unsatisfiable` ('DoNotSchedule' or 'ScheduleAnyway'), with optional `min_domains`. `label_selector` defaults to the workload's own pod labels when omitted."
+  type = list(object({
+    max_skew           = number
+    topology_key       = string
+    when_unsatisfiable = string
+    min_domains        = optional(number)
+    label_selector = optional(object({
+      match_labels = optional(map(string), {})
+      match_expressions = optional(list(object({
+        key      = string
+        operator = string
+        values   = optional(list(string), [])
+      })), [])
+    }))
+  }))
+  default = null
+
+  validation {
+    condition = var.topology_spread_constraints == null ? true : alltrue([
+      for c in var.topology_spread_constraints :
+      contains(["DoNotSchedule", "ScheduleAnyway"], c.when_unsatisfiable)
+    ])
+    error_message = "topology_spread_constraints when_unsatisfiable must be 'DoNotSchedule' or 'ScheduleAnyway'."
+  }
+}
+
 # =============================================================================
 # Labels and Annotations
 # =============================================================================
