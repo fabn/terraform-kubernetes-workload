@@ -84,6 +84,16 @@ module "api" {
   # Pod scheduling
   anti_affinity = "hard"
 
+  # Even spread across availability zones (topology spread constraints).
+  # label_selector defaults to the workload's own pod labels.
+  topology_spread_constraints = [
+    {
+      max_skew           = 1
+      topology_key       = "topology.kubernetes.io/zone"
+      when_unsatisfiable = "ScheduleAnyway"
+    },
+  ]
+
   # Init container for database migrations
   init_container = {
     command = ["bin/rails", "db:migrate"]

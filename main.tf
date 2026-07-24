@@ -311,12 +311,12 @@ resource "kubernetes_deployment_v1" "this" {
 
         # Pod anti-affinity (spread), pod affinity (co-location), node affinity (placement)
         dynamic "affinity" {
-          for_each = var.anti_affinity != null || var.node_affinity != null || var.pod_affinity != null ? [1] : []
+          for_each = var.anti_affinity != null || var.node_affinity != null || var.pod_affinity != null || var.pod_anti_affinity != null ? [1] : []
           content {
             dynamic "pod_anti_affinity" {
-              for_each = var.anti_affinity != null ? [1] : []
+              for_each = var.anti_affinity != null || var.pod_anti_affinity != null ? [1] : []
               content {
-                # Hard anti-affinity
+                # Hard anti-affinity shorthand (hostname spread)
                 dynamic "required_during_scheduling_ignored_during_execution" {
                   for_each = var.anti_affinity == "hard" ? [1] : []
                   content {
@@ -327,7 +327,29 @@ resource "kubernetes_deployment_v1" "this" {
                   }
                 }
 
-                # Soft anti-affinity
+                # Raw hard anti-affinity terms (escape hatch)
+                dynamic "required_during_scheduling_ignored_during_execution" {
+                  for_each = var.pod_anti_affinity != null ? var.pod_anti_affinity.required : []
+                  iterator = term
+                  content {
+                    topology_key = term.value.topology_key
+                    namespaces   = term.value.namespaces
+                    label_selector {
+                      match_labels = term.value.match_labels
+                      dynamic "match_expressions" {
+                        for_each = term.value.match_expressions
+                        iterator = expr
+                        content {
+                          key      = expr.value.key
+                          operator = expr.value.operator
+                          values   = expr.value.values
+                        }
+                      }
+                    }
+                  }
+                }
+
+                # Soft anti-affinity shorthand (hostname spread)
                 dynamic "preferred_during_scheduling_ignored_during_execution" {
                   for_each = var.anti_affinity == "soft" ? [1] : []
                   content {
@@ -336,6 +358,31 @@ resource "kubernetes_deployment_v1" "this" {
                       topology_key = "kubernetes.io/hostname"
                       label_selector {
                         match_labels = local.selector_labels
+                      }
+                    }
+                  }
+                }
+
+                # Raw soft, weighted anti-affinity terms (escape hatch)
+                dynamic "preferred_during_scheduling_ignored_during_execution" {
+                  for_each = var.pod_anti_affinity != null ? var.pod_anti_affinity.preferred : []
+                  iterator = term
+                  content {
+                    weight = term.value.weight
+                    pod_affinity_term {
+                      topology_key = term.value.topology_key
+                      namespaces   = term.value.namespaces
+                      label_selector {
+                        match_labels = term.value.match_labels
+                        dynamic "match_expressions" {
+                          for_each = term.value.match_expressions
+                          iterator = expr
+                          content {
+                            key      = expr.value.key
+                            operator = expr.value.operator
+                            values   = expr.value.values
+                          }
+                        }
                       }
                     }
                   }
@@ -430,6 +477,31 @@ resource "kubernetes_deployment_v1" "this" {
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+
+        # Topology spread constraints (even distribution across zones/nodes).
+        # label_selector defaults to the workload's own pod labels when omitted.
+        dynamic "topology_spread_constraint" {
+          for_each = var.topology_spread_constraints != null ? var.topology_spread_constraints : []
+          iterator = tsc
+          content {
+            max_skew           = tsc.value.max_skew
+            topology_key       = tsc.value.topology_key
+            when_unsatisfiable = tsc.value.when_unsatisfiable
+            min_domains        = tsc.value.min_domains
+            label_selector {
+              match_labels = tsc.value.label_selector == null ? local.selector_labels : tsc.value.label_selector.match_labels
+              dynamic "match_expressions" {
+                for_each = tsc.value.label_selector == null ? [] : tsc.value.label_selector.match_expressions
+                iterator = expr
+                content {
+                  key      = expr.value.key
+                  operator = expr.value.operator
+                  values   = expr.value.values
                 }
               }
             }
