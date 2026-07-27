@@ -26,7 +26,7 @@ run "tolerations_rendered" {
 
   variables {
     tolerations = [
-      { key = "fabn.dev/production", operator = "Exists", effect = "NoSchedule" },
+      { key = "example.com/dedicated", operator = "Exists", effect = "NoSchedule" },
       { key = "dedicated", operator = "Equal", value = "database", effect = "NoExecute", toleration_seconds = 30 },
     ]
   }
@@ -37,7 +37,7 @@ run "tolerations_rendered" {
   }
 
   assert {
-    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].toleration[0].key == "fabn.dev/production"
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].spec[0].toleration[0].key == "example.com/dedicated"
     error_message = "First toleration key should be preserved"
   }
 
