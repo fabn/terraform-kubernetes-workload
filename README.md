@@ -304,6 +304,7 @@ module "api" {
 |------|-------------|------|---------|
 | `anti_affinity` | Anti-affinity strategy (soft/hard/null) | `string` | `"soft"` |
 | `node_selector` | Exact-match node selector (label => value) | `map(string)` | `null` |
+| `tolerations` | Pod tolerations, e.g. to run on a tainted dedicated node pool (`node_selector` only attracts, it does not tolerate the taint). Rendered into `spec.tolerations` only when non-empty. | `list(object({ key, operator, value, effect, toleration_seconds }))` | `[]` |
 | `node_affinity` | Optional node affinity: `required` match expressions (ANDed into one hard term) + `preferred` weighted match expressions. E.g. require spot & non-`t`, prefer `arm64`. | `object({ required = list(...), preferred = list(...) })` | `null` |
 | `pod_affinity` | Optional pod affinity (co-location): `required`/`preferred` terms, each a `topology_key` + label selector (`match_labels`/`match_expressions`). | `object({ required = list(...), preferred = list(...) })` | `null` |
 | `pod_anti_affinity` | Optional raw pod anti-affinity rules (escape hatch), same shape as `pod_affinity`. Additive to the `anti_affinity` shorthand. | `object({ required = list(...), preferred = list(...) })` | `null` |

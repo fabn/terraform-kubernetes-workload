@@ -309,6 +309,19 @@ resource "kubernetes_deployment_v1" "this" {
         # Simple exact-match node selector; complements the affinity rules below.
         node_selector = var.node_selector
 
+        # Tolerations: node_selector/affinity only attract a pod to a node; to run
+        # on a tainted dedicated pool the pod must also tolerate the taint.
+        dynamic "toleration" {
+          for_each = var.tolerations
+          content {
+            key                = toleration.value.key
+            operator           = toleration.value.operator
+            value              = toleration.value.value
+            effect             = toleration.value.effect
+            toleration_seconds = toleration.value.toleration_seconds
+          }
+        }
+
         # Pod anti-affinity (spread), pod affinity (co-location), node affinity (placement)
         dynamic "affinity" {
           for_each = var.anti_affinity != null || var.node_affinity != null || var.pod_affinity != null || var.pod_anti_affinity != null ? [1] : []
