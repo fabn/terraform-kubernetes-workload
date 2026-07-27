@@ -371,6 +371,18 @@ variable "node_selector" {
   default     = null
 }
 
+variable "tolerations" {
+  description = "Pod tolerations, e.g. to run on a tainted dedicated node pool (`node_selector` alone only attracts, it does not tolerate the taint). Rendered verbatim into spec.tolerations, only when non-empty."
+  type = list(object({
+    key                = optional(string)
+    operator           = optional(string, "Equal")
+    value              = optional(string)
+    effect             = optional(string)
+    toleration_seconds = optional(number)
+  }))
+  default = []
+}
+
 variable "pod_affinity" {
   description = "Optional pod affinity (co-location). `required`/`preferred` terms, each a topology_key plus a label selector (match_labels and/or set-based match_expressions), optionally scoped to namespaces. `preferred` terms carry a weight."
   type = object({
