@@ -371,6 +371,30 @@ variable "node_selector" {
   default     = null
 }
 
+# The pod's whole shutdown budget, not just a grace note: the kubelet sends
+# SIGTERM, waits this long, then SIGKILLs. It applies to every termination —
+# an autoscaler scaling in, a node drain, a Spot reclaim, a rollout — so it is
+# the one lever that lets work in flight finish regardless of what stopped the
+# pod. A queue worker's own shutdown timeout (Sidekiq's `-t`, Celery's warm
+# shutdown) has to fit inside it, or the process is killed while still waiting
+# for its own jobs.
+#
+# Raising it is not free: it delays every voluntary drain and node
+# consolidation by the same amount. On preemptible/Spot capacity there is also
+# a hard ceiling — the provider's interruption notice, two minutes on AWS —
+# beyond which the node is gone whatever this says.
+variable "termination_grace_period_seconds" {
+  description = "spec.terminationGracePeriodSeconds (null = Kubernetes default of 30). Bounds how long a pod may take to shut down cleanly, on any termination path."
+  type        = number
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.termination_grace_period_seconds == null || try(var.termination_grace_period_seconds >= 0, false)
+    error_message = "termination_grace_period_seconds must be zero or greater."
+  }
+}
+
 variable "tolerations" {
   description = "Pod tolerations, e.g. to run on a tainted dedicated node pool (`node_selector` alone only attracts, it does not tolerate the taint). Rendered verbatim into spec.tolerations, only when non-empty."
   type = list(object({

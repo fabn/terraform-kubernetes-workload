@@ -309,6 +309,7 @@ module "api" {
 | `pod_affinity` | Optional pod affinity (co-location): `required`/`preferred` terms, each a `topology_key` + label selector (`match_labels`/`match_expressions`). | `object({ required = list(...), preferred = list(...) })` | `null` |
 | `pod_anti_affinity` | Optional raw pod anti-affinity rules (escape hatch), same shape as `pod_affinity`. Additive to the `anti_affinity` shorthand. | `object({ required = list(...), preferred = list(...) })` | `null` |
 | `topology_spread_constraints` | Optional topology spread constraints: list of `{ max_skew, topology_key, when_unsatisfiable, min_domains?, label_selector? }`. `label_selector` defaults to the workload's own pod labels. | `list(object({...}))` | `null` |
+| `termination_grace_period_seconds` | `spec.terminationGracePeriodSeconds` (null = k8s default 30). How long the kubelet waits between SIGTERM and SIGKILL, on **every** termination path — autoscaler scale-in, node drain, Spot reclaim, rollout. A queue worker's own shutdown timeout (Sidekiq `-t`, Celery warm shutdown) must fit inside it, or the process is killed while still waiting for its own jobs. Raising it also delays every voluntary drain and node consolidation by the same amount, and on Spot the provider's interruption notice (two minutes on AWS) is a hard ceiling. | `number` | `null` |
 
 ### Labels and Annotations
 

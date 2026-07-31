@@ -306,6 +306,9 @@ resource "kubernetes_deployment_v1" "this" {
         # Service account
         service_account_name = var.service_account_name
 
+        # Shutdown budget for every termination path, not just voluntary ones.
+        termination_grace_period_seconds = var.termination_grace_period_seconds
+
         # Simple exact-match node selector; complements the affinity rules below.
         node_selector = var.node_selector
 
