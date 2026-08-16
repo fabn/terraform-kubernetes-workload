@@ -97,6 +97,33 @@ locals {
     ])...
   )
 
+  # Every image the pod spec can reference: the main one plus the optional
+  # sidecar and init container overrides.
+  all_images = toset(concat(
+    [var.image],
+    [for sidecar in var.sidecar_containers : coalesce(sidecar.image, var.image)],
+    var.init_container != null ? [coalesce(var.init_container.image, var.image)] : [],
+  ))
+
+  # Tag/digest part of each reference. Only the last path segment is looked at,
+  # so the port of a registry host ("registry:5000/team/app") is not mistaken
+  # for a tag.
+  image_refs = { for image in local.all_images : image => reverse(split("/", image))[0] }
+
+  # imagePullPolicy per image. Kubernetes applies the same rule ("Always" for a
+  # mutable reference, "IfNotPresent" for a pinned one) but only as a default,
+  # i.e. when the field is empty. Once defaulted the value sticks: a Deployment
+  # first created on ":latest" keeps "Always" after moving to a fixed tag, and
+  # one created on a fixed tag keeps "IfNotPresent" after moving to ":latest" —
+  # where it then serves a stale cached image. Rendering the policy explicitly
+  # recomputes it on every apply, so it always matches the current image.
+  image_pull_policies = {
+    for image, ref in local.image_refs : image => coalesce(
+      var.image_pull_policy,
+      !strcontains(ref, ":") || endswith(ref, ":latest") ? "Always" : "IfNotPresent"
+    )
+  }
+
   # SOPS files map for for_each (uses basename without extension as key)
   # Handles multiple extensions like .enc.env, .enc.json, .enc.yaml
   sops_files_map = {

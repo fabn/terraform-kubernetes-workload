@@ -63,6 +63,18 @@ variable "image_pull_secrets" {
   nullable    = true
 }
 
+variable "image_pull_policy" {
+  description = "Override the container imagePullPolicy. When null (default) the policy is derived from the image reference: Always for a mutable one (no tag, or the :latest tag), IfNotPresent for a pinned tag or digest."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.image_pull_policy == null || contains(["Always", "IfNotPresent", "Never"], coalesce(var.image_pull_policy, "Always"))
+    error_message = "image_pull_policy must be one of Always, IfNotPresent, Never."
+  }
+}
+
 variable "service_account_name" {
   description = "Service account to use for the pods"
   type        = string
