@@ -207,6 +207,46 @@ module "api" {
 }
 ```
 
+## Image pull policy
+
+The module always renders `imagePullPolicy` explicitly, one container at a
+time, derived from that container's image reference:
+
+| Image reference | Policy |
+|-----------------|--------|
+| `nginx`, `registry.internal:5000/team/api` (no tag) | `Always` |
+| `nginx:latest` | `Always` |
+| `my-registry/api:v1.0.0` | `IfNotPresent` |
+| `my-registry/api@sha256:…` | `IfNotPresent` |
+
+That is the same rule Kubernetes applies, but Kubernetes applies it only as a
+*default* — that is, only while the field is empty. Once the API server has
+filled it in, the value sticks, and the image can change underneath it:
+
+- a Deployment first created on `:latest` keeps `Always` after moving to a
+  pinned tag, re-pulling an immutable image on every pod start;
+- one first created on a pinned tag keeps `IfNotPresent` after moving to
+  `:latest`, where it can then serve a stale cached image instead of the one
+  that was just pushed.
+
+Rendering the policy makes it a function of the current image, recomputed on
+every apply, so neither drift survives.
+
+Set `image_pull_policy` to override the derivation for all containers of the
+workload — for example `Never` on a local cluster where images are preloaded
+into the nodes:
+
+```hcl
+module "workload" {
+  source  = "fabn/workload/kubernetes"
+
+  name              = "api"
+  namespace         = "default"
+  image             = "my-registry/api:v1.0.0"
+  image_pull_policy = "Never"
+}
+```
+
 ## Requirements
 
 | Name | Version |
@@ -234,6 +274,7 @@ module "api" {
 | `args` | Container arguments | `list(string)` | `[]` |
 | `working_dir` | Container working directory | `string` | `null` |
 | `image_pull_secrets` | Image pull secret name | `string` | `null` |
+| `image_pull_policy` | Override `containers[].imagePullPolicy`. When `null` the policy is derived from each container's image reference — `Always` for a mutable one (no tag, or `:latest`), `IfNotPresent` for a pinned tag or digest — and rendered explicitly. See [Image pull policy](#image-pull-policy). | `string` | `null` |
 | `service_account_name` | Service account name | `string` | `null` |
 
 ### Resources

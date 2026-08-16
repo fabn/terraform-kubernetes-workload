@@ -76,11 +76,12 @@ resource "kubernetes_deployment_v1" "this" {
       spec {
         # Main container
         container {
-          name        = var.name
-          image       = var.image
-          command     = length(var.command) > 0 ? var.command : null
-          args        = length(var.args) > 0 ? var.args : null
-          working_dir = var.working_dir
+          name              = var.name
+          image             = var.image
+          image_pull_policy = local.image_pull_policies[var.image]
+          command           = length(var.command) > 0 ? var.command : null
+          args              = length(var.args) > 0 ? var.args : null
+          working_dir       = var.working_dir
 
           # Ports
           dynamic "port" {
@@ -248,11 +249,12 @@ resource "kubernetes_deployment_v1" "this" {
         dynamic "container" {
           for_each = var.sidecar_containers
           content {
-            name        = container.value.name
-            image       = coalesce(container.value.image, var.image)
-            command     = container.value.command
-            args        = container.value.args
-            working_dir = var.working_dir
+            name              = container.value.name
+            image             = coalesce(container.value.image, var.image)
+            image_pull_policy = local.image_pull_policies[coalesce(container.value.image, var.image)]
+            command           = container.value.command
+            args              = container.value.args
+            working_dir       = var.working_dir
 
             # Ports
             dynamic "port" {
@@ -569,11 +571,12 @@ resource "kubernetes_deployment_v1" "this" {
         dynamic "init_container" {
           for_each = var.init_container != null ? [var.init_container] : []
           content {
-            name        = "init"
-            image       = coalesce(init_container.value.image, var.image)
-            working_dir = var.working_dir
-            command     = init_container.value.command
-            args        = init_container.value.args
+            name              = "init"
+            image             = coalesce(init_container.value.image, var.image)
+            image_pull_policy = local.image_pull_policies[coalesce(init_container.value.image, var.image)]
+            working_dir       = var.working_dir
+            command           = init_container.value.command
+            args              = init_container.value.args
 
             # Inherit environment variables
             dynamic "env" {
