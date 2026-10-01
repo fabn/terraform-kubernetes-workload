@@ -121,3 +121,63 @@ run "probe_tuning" {
     error_message = "Liveness/readiness probes should share the probe_* timeout/threshold"
   }
 }
+
+# Test: TCP probes configured
+run "tcp_probes" {
+  command = plan
+
+  variables {
+    tcp_probe_port = "mysql"
+    ports          = { mysql = 3306 }
+  }
+
+  assert {
+    condition = (
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].readiness_probe[0].tcp_socket[0].port == "mysql" &&
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].liveness_probe[0].tcp_socket[0].port == "mysql" &&
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].startup_probe[0].tcp_socket[0].port == "mysql"
+    )
+    error_message = "All three probes should use a tcp_socket handler on the named port"
+  }
+
+  assert {
+    condition = (
+      length(kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].readiness_probe[0].http_get) == 0 &&
+      length(kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].liveness_probe[0].http_get) == 0
+    )
+    error_message = "TCP probes should not render an http_get handler"
+  }
+}
+
+# Test: TCP probes share the same tuning variables as HTTP ones
+run "tcp_probe_tuning" {
+  command = plan
+
+  variables {
+    tcp_probe_port                  = "mysql"
+    ports                           = { mysql = 3306 }
+    startup_probe_failure_threshold = 20
+    probe_timeout_seconds           = 2
+  }
+
+  assert {
+    condition = (
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].startup_probe[0].failure_threshold == 20 &&
+      kubernetes_deployment_v1.this.spec[0].template[0].spec[0].container[0].readiness_probe[0].timeout_seconds == 2
+    )
+    error_message = "TCP probes should honour the shared probe tuning variables"
+  }
+}
+
+# Test: the two handlers cannot be combined
+run "tcp_and_http_are_mutually_exclusive" {
+  command = plan
+
+  variables {
+    http_probe_path = "/health"
+    tcp_probe_port  = "mysql"
+    ports           = { http = 8080, mysql = 3306 }
+  }
+
+  expect_failures = [kubernetes_deployment_v1.this]
+}

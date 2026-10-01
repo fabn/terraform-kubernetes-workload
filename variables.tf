@@ -303,6 +303,16 @@ variable "probe_port" {
   default     = "http"
 }
 
+# For workloads whose readiness is a listening socket rather than an HTTP
+# endpoint — a database proxy, a message broker, a TCP service. Mutually
+# exclusive with the HTTP paths; the deployment rejects both being set.
+variable "tcp_probe_port" {
+  description = "Named port for TCP startup, liveness and readiness probes. Mutually exclusive with http_probe_path and startup_probe_path."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 # Probe tuning. All null by default, so the Kubernetes defaults apply
 # (timeoutSeconds 1, failureThreshold 3). The startup probe is tuned
 # separately from the shared liveness/readiness probe because a cold boot

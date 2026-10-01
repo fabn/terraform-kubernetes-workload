@@ -86,6 +86,13 @@ locals {
     local.datadog_annotations
   )
 
+  # Probe handlers. HTTP and TCP are mutually exclusive — a precondition on the
+  # deployment rejects both — so at most one renders into each probe block.
+  http_probes_enabled   = var.http_probe_path != null
+  tcp_probes_enabled    = var.tcp_probe_port != null
+  probes_enabled        = local.http_probes_enabled || local.tcp_probes_enabled
+  startup_probe_enabled = var.startup_probe_path != null || local.probes_enabled
+
   # Resource limits/requests
   memory_limit = coalesce(var.memory_limits, var.memory_requests, "1Gi")
 
