@@ -176,39 +176,66 @@ resource "kubernetes_deployment_v1" "this" {
 
           # Startup probe
           dynamic "startup_probe" {
-            for_each = length(compact([var.startup_probe_path, var.http_probe_path])) > 0 ? [1] : []
+            for_each = local.startup_probe_enabled ? [1] : []
             content {
               timeout_seconds   = var.startup_probe_timeout_seconds
               failure_threshold = var.startup_probe_failure_threshold
-              http_get {
-                path = coalesce(var.startup_probe_path, var.http_probe_path)
-                port = var.probe_port
+              dynamic "http_get" {
+                for_each = var.startup_probe_path != null || local.http_probes_enabled ? [1] : []
+                content {
+                  path = coalesce(var.startup_probe_path, var.http_probe_path)
+                  port = var.probe_port
+                }
+              }
+              dynamic "tcp_socket" {
+                for_each = local.tcp_probes_enabled ? [1] : []
+                content {
+                  port = var.tcp_probe_port
+                }
               }
             }
           }
 
           # Liveness probe
           dynamic "liveness_probe" {
-            for_each = var.http_probe_path != null ? [1] : []
+            for_each = local.probes_enabled ? [1] : []
             content {
               timeout_seconds   = var.probe_timeout_seconds
               failure_threshold = var.probe_failure_threshold
-              http_get {
-                path = var.http_probe_path
-                port = var.probe_port
+              dynamic "http_get" {
+                for_each = local.http_probes_enabled ? [1] : []
+                content {
+                  path = var.http_probe_path
+                  port = var.probe_port
+                }
+              }
+              dynamic "tcp_socket" {
+                for_each = local.tcp_probes_enabled ? [1] : []
+                content {
+                  port = var.tcp_probe_port
+                }
               }
             }
           }
 
           # Readiness probe
           dynamic "readiness_probe" {
-            for_each = var.http_probe_path != null ? [1] : []
+            for_each = local.probes_enabled ? [1] : []
             content {
               timeout_seconds   = var.probe_timeout_seconds
               failure_threshold = var.probe_failure_threshold
-              http_get {
-                path = var.http_probe_path
-                port = var.probe_port
+              dynamic "http_get" {
+                for_each = local.http_probes_enabled ? [1] : []
+                content {
+                  path = var.http_probe_path
+                  port = var.probe_port
+                }
+              }
+              dynamic "tcp_socket" {
+                for_each = local.tcp_probes_enabled ? [1] : []
+                content {
+                  port = var.tcp_probe_port
+                }
               }
             }
           }
@@ -609,6 +636,13 @@ resource "kubernetes_deployment_v1" "this" {
           }
         }
       }
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.tcp_probe_port == null || (var.http_probe_path == null && var.startup_probe_path == null)
+      error_message = "tcp_probe_port is mutually exclusive with http_probe_path and startup_probe_path: a probe takes one handler."
     }
   }
 }

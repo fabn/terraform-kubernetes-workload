@@ -334,6 +334,7 @@ module "workload" {
 | `http_probe_path` | HTTP path for probes | `string` | `null` |
 | `startup_probe_path` | Startup probe path | `string` | `null` |
 | `probe_port` | Named port for probes | `string` | `"http"` |
+| `tcp_probe_port` | Named port for TCP probes (mutually exclusive with the HTTP paths) | `string` | `null` |
 | `startup_probe_timeout_seconds` | startupProbe timeoutSeconds (null = k8s default 1) | `number` | `null` |
 | `startup_probe_failure_threshold` | startupProbe failureThreshold (null = k8s default 3) | `number` | `null` |
 | `probe_timeout_seconds` | liveness/readiness timeoutSeconds (null = k8s default 1) | `number` | `null` |
