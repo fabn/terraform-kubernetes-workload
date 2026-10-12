@@ -61,7 +61,19 @@ resource "kubernetes_deployment_v1" "this" {
   }
 
   spec {
-    replicas = var.replicas
+    replicas          = var.replicas
+    min_ready_seconds = var.min_ready_seconds
+
+    dynamic "strategy" {
+      for_each = var.rolling_update == null ? [] : [var.rolling_update]
+      content {
+        type = "RollingUpdate"
+        rolling_update {
+          max_surge       = strategy.value.max_surge
+          max_unavailable = strategy.value.max_unavailable
+        }
+      }
+    }
 
     selector {
       match_labels = local.selector_labels

@@ -269,6 +269,8 @@ module "workload" {
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
 | `replicas` | Number of pod replicas | `number` | `1` |
+| `rolling_update` | `spec.strategy.rollingUpdate` as `{ max_surge, max_unavailable }`, each an integer or a percentage (unset fields default to `25%`). `null` leaves the Kubernetes default. With `anti_affinity = "hard"` and as many nodes as replicas, the default surge pod has nowhere to schedule and makes a node autoscaler add one for every rollout; `{ max_surge = "0", max_unavailable = "1" }` replaces pods in place instead, at the cost of one replica less during the rollout — so not on a single replica. | `object` | `null` |
+| `min_ready_seconds` | `spec.minReadySeconds` (null = k8s default 0). How long a new pod must stay ready before it counts as available and the rollout takes down the next one. | `number` | `null` |
 | `create_namespace` | Create the namespace if it doesn't exist | `bool` | `false` |
 | `command` | Container command | `list(string)` | `[]` |
 | `args` | Container arguments | `list(string)` | `[]` |
