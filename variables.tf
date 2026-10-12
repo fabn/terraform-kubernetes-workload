@@ -37,6 +37,42 @@ variable "replicas" {
   default     = 1
 }
 
+# Unset, Kubernetes applies 25% / 25%, which on 2 replicas rounds to one extra
+# pod and none unavailable. With hard anti-affinity that extra pod needs a node
+# no replica is on, and a pool sized to the replica count has none to give.
+variable "rolling_update" {
+  description = "spec.strategy.rollingUpdate (null = Kubernetes defaults, 25% surge / 25% unavailable). Each field takes an integer or a percentage; they cannot both be zero."
+  type = object({
+    max_surge       = optional(string, "25%")
+    max_unavailable = optional(string, "25%")
+  })
+  default = null
+
+  validation {
+    condition = var.rolling_update == null || alltrue([
+      for v in [var.rolling_update.max_surge, var.rolling_update.max_unavailable] : can(regex("^[0-9]+%?$", v))
+    ])
+    error_message = "rolling_update.max_surge and max_unavailable must be an integer or a percentage, e.g. \"1\" or \"25%\"."
+  }
+
+  validation {
+    condition     = var.rolling_update == null || try(!(trimsuffix(var.rolling_update.max_surge, "%") == "0" && trimsuffix(var.rolling_update.max_unavailable, "%") == "0"), true)
+    error_message = "rolling_update.max_surge and max_unavailable cannot both be zero: the rollout could never make progress."
+  }
+}
+
+variable "min_ready_seconds" {
+  description = "spec.minReadySeconds (null = Kubernetes default of 0). How long a new pod must stay ready before the rollout counts it available and moves on."
+  type        = number
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.min_ready_seconds == null || try(var.min_ready_seconds >= 0, false)
+    error_message = "min_ready_seconds must be zero or greater."
+  }
+}
+
 variable "command" {
   description = "Container command (entrypoint override)"
   type        = list(string)
