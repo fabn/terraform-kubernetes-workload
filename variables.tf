@@ -140,6 +140,18 @@ variable "memory_limits" {
   default     = null
 }
 
+variable "ephemeral_storage_requests" {
+  description = "Ephemeral storage request (e.g., 2Gi). Counts emptyDir volumes and container logs and writable layers"
+  type        = string
+  default     = null
+}
+
+variable "ephemeral_storage_limits" {
+  description = "Ephemeral storage limit. A kubelet that measures local storage (the default) marks the pod for eviction past it"
+  type        = string
+  default     = null
+}
+
 # =============================================================================
 # Networking
 # =============================================================================
