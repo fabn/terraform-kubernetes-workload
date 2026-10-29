@@ -287,7 +287,7 @@ module "workload" {
 | `memory_requests` | Memory resource request | `string` | `null` |
 | `memory_limits` | Memory resource limit | `string` | `null` |
 | `ephemeral_storage_requests` | Ephemeral storage request, emptyDir volumes included | `string` | `null` |
-| `ephemeral_storage_limits` | Ephemeral storage limit; the pod is evicted past it | `string` | `null` |
+| `ephemeral_storage_limits` | Ephemeral storage limit; past it the kubelet marks the pod for eviction | `string` | `null` |
 
 ### Networking
 

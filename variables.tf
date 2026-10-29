@@ -147,7 +147,7 @@ variable "ephemeral_storage_requests" {
 }
 
 variable "ephemeral_storage_limits" {
-  description = "Ephemeral storage limit. The kubelet evicts the pod past it. Unset by default"
+  description = "Ephemeral storage limit. A kubelet that measures local storage (the default) marks the pod for eviction past it"
   type        = string
   default     = null
 }
