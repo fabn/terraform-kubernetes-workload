@@ -254,13 +254,14 @@ resource "kubernetes_deployment_v1" "this" {
 
           # Resource requests and limits
           resources {
-            limits = {
-              memory = local.memory_limit
-            }
-            requests = {
-              cpu    = var.cpu_requests
-              memory = var.memory_requests
-            }
+            limits = merge(
+              { memory = local.memory_limit },
+              var.ephemeral_storage_limits != null ? { "ephemeral-storage" = var.ephemeral_storage_limits } : {},
+            )
+            requests = merge(
+              { cpu = var.cpu_requests, memory = var.memory_requests },
+              var.ephemeral_storage_requests != null ? { "ephemeral-storage" = var.ephemeral_storage_requests } : {},
+            )
           }
 
           # Volume mounts
