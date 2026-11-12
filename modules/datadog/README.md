@@ -111,8 +111,9 @@ ad.datadoghq.com/<container>.logs_exclude: "true"
 
 This is preferable to an `exclude = [".*"]` catch-all, which still ships every
 line through the Agent's processing pipeline before dropping it. `source`,
-`service` and `exclude` configure log collection, so combining them with
-`enabled = false` is rejected by a variable validation.
+`service` and `exclude` are ignored while `enabled = false`, so log collection
+can be toggled without removing the rest of the configuration. Unified Service
+Tagging labels (`ust_tags`) and check annotations are not affected.
 
 Requires Datadog Agent v7.45+. Reference:
 https://docs.datadoghq.com/containers/guide/container-discovery-management/#pod-exclude-configuration

@@ -286,31 +286,32 @@ run "datadog_logs_disabled" {
   }
 }
 
-# Test: enabled = false cannot be combined with source/service/exclude
-run "datadog_logs_disabled_with_config_rejected" {
+# Test: source/service/exclude are ignored when log collection is disabled,
+# and UST labels are still rendered
+run "datadog_logs_disabled_ignores_log_config" {
   command = plan
 
   variables {
     datadog_enabled = true
+    datadog_ust_tags = {
+      service = "my-api"
+      env     = "production"
+    }
     datadog_log_config = {
       enabled = false
       source  = "ruby"
+      service = "my-api"
+      exclude = ["/health"]
     }
   }
 
-  expect_failures = [var.datadog_log_config]
-}
-
-run "datadog_logs_disabled_with_exclude_rejected" {
-  command = plan
-
-  variables {
-    datadog_enabled = true
-    datadog_log_config = {
-      enabled = false
-      exclude = [".*"]
-    }
+  assert {
+    condition     = length(module.datadog[0].log_annotations) == 1 && module.datadog[0].log_annotations["ad.datadoghq.com/test-app.logs_exclude"] == "true"
+    error_message = "enabled = false should render only the logs_exclude annotation, ignoring source/service/exclude"
   }
 
-  expect_failures = [var.datadog_log_config]
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].metadata[0].labels["tags.datadoghq.com/service"] == "my-api"
+    error_message = "UST labels should still be rendered when log collection is disabled"
+  }
 }

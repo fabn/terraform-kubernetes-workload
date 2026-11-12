@@ -130,7 +130,7 @@ pipeline. Requires Datadog Agent v7.45+.
 
 ```hcl
   datadog_log_config = {
-    enabled = false # source, service and exclude must not be set
+    enabled = false # source, service and exclude are ignored when disabled
   }
 ```
 
