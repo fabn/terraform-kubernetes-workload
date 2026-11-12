@@ -29,13 +29,21 @@ variable "ust_tags" {
 }
 
 variable "log_config" {
-  description = "Datadog log collection configuration"
+  description = "Datadog log collection configuration. Set enabled = false to exclude the container from log collection entirely via the ad.datadoghq.com/<container>.logs_exclude annotation (requires Datadog Agent v7.45+); source, service and exclude cannot be combined with enabled = false."
   type = object({
+    enabled = optional(bool, true)
     source  = optional(string)
     service = optional(string)
     exclude = optional(list(string), [])
   })
   default = {}
+  validation {
+    condition = (
+      var.log_config.enabled ||
+      (var.log_config.source == null && var.log_config.service == null && length(coalesce(var.log_config.exclude, [])) == 0)
+    )
+    error_message = "log_config.enabled = false excludes the container from log collection, so source, service and exclude must not be set."
+  }
 }
 
 variable "checks" {

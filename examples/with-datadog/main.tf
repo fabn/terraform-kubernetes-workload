@@ -40,6 +40,8 @@ module "api" {
   # Log collection configuration
   # exclude: patterns to filter out from logs (uses log_processing_rules with exclude_at_match)
   # Useful for health checks, readiness probes, or noisy endpoints
+  # Set enabled = false (without source/service/exclude) to exclude this
+  # container from log collection entirely (requires Datadog Agent v7.45+).
   datadog_log_config = {
     source  = "ruby"
     service = "my-api"

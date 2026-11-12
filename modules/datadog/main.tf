@@ -53,9 +53,20 @@ locals {
     } : {}
   )
 
-  log_annotations = length(keys(local.log_config_object)) > 0 ? {
-    "ad.datadoghq.com/${var.container_name}.logs" = jsonencode([local.log_config_object])
-  } : {}
+  log_annotations = var.log_config.enabled ? (
+    length(keys(local.log_config_object)) > 0 ? {
+      "ad.datadoghq.com/${var.container_name}.logs" = jsonencode([local.log_config_object])
+    } : {}
+  ) : local.logs_exclude_annotations
+
+  # When log collection is disabled, exclude the container with the dedicated
+  # annotation (Datadog Agent v7.45+) instead of a catch-all exclude_at_match
+  # rule, so its lines never enter the Agent's processing pipeline. Metrics
+  # collection is not affected. A .logs annotation is not emitted in this case.
+  # https://docs.datadoghq.com/containers/guide/container-discovery-management/#pod-exclude-configuration
+  logs_exclude_annotations = {
+    "ad.datadoghq.com/${var.container_name}.logs_exclude" = "true"
+  }
 
   # Autodiscovery check annotations (AD v2 format)
   # https://docs.datadoghq.com/containers/kubernetes/integrations/
