@@ -685,8 +685,9 @@ variable "datadog_ust_tags" {
 }
 
 variable "datadog_log_config" {
-  description = "Datadog log collection configuration"
+  description = "Datadog log collection configuration. Set enabled = false to exclude the container from log collection entirely via the ad.datadoghq.com/<container>.logs_exclude annotation (requires Datadog Agent v7.45+); source, service and exclude are ignored when enabled = false."
   type = object({
+    enabled = optional(bool, true)
     source  = optional(string)
     service = optional(string)
     exclude = optional(list(string), [])

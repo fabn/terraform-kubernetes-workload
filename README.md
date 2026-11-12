@@ -123,6 +123,17 @@ module "api" {
 }
 ```
 
+To stop collecting a container's logs altogether (metrics are unaffected), set
+`enabled = false`. This renders `ad.datadoghq.com/<container>.logs_exclude: "true"`
+instead of the `.logs` annotation, so log lines never reach the Agent's processing
+pipeline. Requires Datadog Agent v7.45+.
+
+```hcl
+  datadog_log_config = {
+    enabled = false # source, service and exclude are ignored when disabled
+  }
+```
+
 ### Full Featured
 
 ```hcl
@@ -394,7 +405,7 @@ module "workload" {
 |------|-------------|------|---------|
 | `datadog_enabled` | Enable Datadog integration | `bool` | `false` |
 | `datadog_ust_tags` | Unified Service Tagging | `object` | `{}` |
-| `datadog_log_config` | Log collection config (source, service, exclude) | `object` | `{}` |
+| `datadog_log_config` | Log collection config (enabled, source, service, exclude). `enabled = false` excludes the container from log collection (Agent v7.45+) | `object` | `{}` |
 | `datadog_checks` | Autodiscovery checks (AD v2 format) | `map(object)` | `{}` |
 | `datadog_check_id` | Built-in check ID | `string` | `null` |
 | `datadog_admission_controller` | Enable admission controller label | `bool` | `true` |

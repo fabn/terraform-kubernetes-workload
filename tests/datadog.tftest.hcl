@@ -201,3 +201,117 @@ run "datadog_checks_v2_format" {
     error_message = "Checks annotation should contain the check name 'mysql'"
   }
 }
+
+# Test: Log collection is enabled by default and rendered annotations are unchanged
+run "datadog_logs_enabled_by_default" {
+  command = plan
+
+  variables {
+    datadog_enabled = true
+    datadog_log_config = {
+      source  = "ruby"
+      service = "my-api"
+      exclude = ["/health"]
+    }
+  }
+
+  assert {
+    condition     = length(module.datadog[0].pod_annotations) == 1 && contains(keys(module.datadog[0].pod_annotations), "ad.datadoghq.com/test-app.logs")
+    error_message = "Default log config should render only the .logs annotation"
+  }
+
+  assert {
+    condition = module.datadog[0].pod_annotations["ad.datadoghq.com/test-app.logs"] == jsonencode([{
+      source  = "ruby"
+      service = "my-api"
+      log_processing_rules = [{
+        type    = "exclude_at_match"
+        name    = "exclude--health"
+        pattern = "/health"
+      }]
+    }])
+    error_message = "Default .logs annotation content should be unchanged"
+  }
+
+  assert {
+    condition     = !contains(keys(kubernetes_deployment_v1.this.spec[0].template[0].metadata[0].annotations), "ad.datadoghq.com/test-app.logs_exclude")
+    error_message = "logs_exclude annotation should not be set by default"
+  }
+}
+
+# Test: No log annotations at all when no log config is given
+run "datadog_no_log_config" {
+  command = plan
+
+  variables {
+    datadog_enabled = true
+  }
+
+  assert {
+    condition     = length(module.datadog[0].log_annotations) == 0
+    error_message = "No log annotations should be rendered without log config"
+  }
+}
+
+# Test: enabled = false excludes the container from log collection
+run "datadog_logs_disabled" {
+  command = plan
+
+  variables {
+    datadog_enabled = true
+    datadog_log_config = {
+      enabled = false
+    }
+    datadog_check_id = "nginx"
+  }
+
+  assert {
+    condition     = length(module.datadog[0].log_annotations) == 1 && module.datadog[0].log_annotations["ad.datadoghq.com/test-app.logs_exclude"] == "true"
+    error_message = "enabled = false should render only the logs_exclude annotation"
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].metadata[0].annotations["ad.datadoghq.com/test-app.logs_exclude"] == "true"
+    error_message = "logs_exclude annotation should be set on the pod template"
+  }
+
+  assert {
+    condition     = !contains(keys(kubernetes_deployment_v1.this.spec[0].template[0].metadata[0].annotations), "ad.datadoghq.com/test-app.logs")
+    error_message = ".logs annotation should not be set when log collection is disabled"
+  }
+
+  assert {
+    condition     = contains(keys(kubernetes_deployment_v1.this.spec[0].template[0].metadata[0].annotations), "ad.datadoghq.com/test-app.checks")
+    error_message = "Check annotations should be unaffected when log collection is disabled"
+  }
+}
+
+# Test: source/service/exclude are ignored when log collection is disabled,
+# and UST labels are still rendered
+run "datadog_logs_disabled_ignores_log_config" {
+  command = plan
+
+  variables {
+    datadog_enabled = true
+    datadog_ust_tags = {
+      service = "my-api"
+      env     = "production"
+    }
+    datadog_log_config = {
+      enabled = false
+      source  = "ruby"
+      service = "my-api"
+      exclude = ["/health"]
+    }
+  }
+
+  assert {
+    condition     = length(module.datadog[0].log_annotations) == 1 && module.datadog[0].log_annotations["ad.datadoghq.com/test-app.logs_exclude"] == "true"
+    error_message = "enabled = false should render only the logs_exclude annotation, ignoring source/service/exclude"
+  }
+
+  assert {
+    condition     = kubernetes_deployment_v1.this.spec[0].template[0].metadata[0].labels["tags.datadoghq.com/service"] == "my-api"
+    error_message = "UST labels should still be rendered when log collection is disabled"
+  }
+}

@@ -6,7 +6,7 @@ Helper module for generating Datadog pod labels and annotations.
 
 - **Unified Service Tagging (UST)**: Standard labels for service catalog and APM correlation
 - **Admission Controller**: Pod label for automatic environment variable injection
-- **Log Collection**: Annotations for Datadog log collection configuration
+- **Log Collection**: Annotations for Datadog log collection configuration, or for excluding a container from log collection entirely
 - **Autodiscovery Checks**: Annotations for built-in and custom Datadog checks
 
 ## Usage
@@ -92,11 +92,31 @@ ust_tags = {
 
 ```hcl
 log_config = {
+  enabled = true                # Optional, defaults to true
   source  = "ruby"              # Log source
   service = "my-api"            # Service name
   exclude = ["health", "ready"] # Patterns to exclude
 }
 ```
+
+#### Disabling log collection
+
+Setting `enabled = false` excludes the container from log collection entirely,
+while leaving metrics collection untouched. Instead of the
+`ad.datadoghq.com/<container>.logs` annotation, the module renders:
+
+```yaml
+ad.datadoghq.com/<container>.logs_exclude: "true"
+```
+
+This is preferable to an `exclude = [".*"]` catch-all, which still ships every
+line through the Agent's processing pipeline before dropping it. `source`,
+`service` and `exclude` are ignored while `enabled = false`, so log collection
+can be toggled without removing the rest of the configuration. Unified Service
+Tagging labels (`ust_tags`) and check annotations are not affected.
+
+Requires Datadog Agent v7.45+. Reference:
+https://docs.datadoghq.com/containers/guide/container-discovery-management/#pod-exclude-configuration
 
 ## Outputs
 
