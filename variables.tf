@@ -465,6 +465,18 @@ variable "termination_grace_period_seconds" {
   }
 }
 
+variable "pre_stop_sleep_seconds" {
+  description = "Seconds the main container keeps running after the pod starts terminating, before it receives SIGTERM (lifecycle.preStop). null or 0 = no hook. Lets a load balancer that targets pod IPs finish deregistering the pod while it still serves traffic. Currently rendered as an exec of `sleep <seconds>`, so the image must ship a `sleep` binary on PATH. Must be lower than termination_grace_period_seconds (default 30), which must also cover the application's own drain time."
+  type        = number
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.pre_stop_sleep_seconds == null || try(var.pre_stop_sleep_seconds >= 0 && floor(var.pre_stop_sleep_seconds) == var.pre_stop_sleep_seconds, false)
+    error_message = "pre_stop_sleep_seconds must be a non-negative integer."
+  }
+}
+
 variable "tolerations" {
   description = "Pod tolerations, e.g. to run on a tainted dedicated node pool (`node_selector` alone only attracts, it does not tolerate the taint). Rendered verbatim into spec.tolerations, only when non-empty."
   type = list(object({

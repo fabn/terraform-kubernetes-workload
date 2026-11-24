@@ -252,6 +252,21 @@ resource "kubernetes_deployment_v1" "this" {
             }
           }
 
+          # preStop delay: keep serving while an IP-target load balancer finishes
+          # deregistering the pod; SIGTERM is sent only after the hook returns.
+          # Rendered as exec because the kubernetes provider does not support the
+          # native `sleep` lifecycle handler yet.
+          dynamic "lifecycle" {
+            for_each = local.pre_stop_sleep_enabled ? [1] : []
+            content {
+              pre_stop {
+                exec {
+                  command = ["sleep", tostring(var.pre_stop_sleep_seconds)]
+                }
+              }
+            }
+          }
+
           # Resource requests and limits
           resources {
             limits = merge(
@@ -656,6 +671,10 @@ resource "kubernetes_deployment_v1" "this" {
     precondition {
       condition     = var.tcp_probe_port == null || (var.http_probe_path == null && var.startup_probe_path == null)
       error_message = "tcp_probe_port is mutually exclusive with http_probe_path and startup_probe_path: a probe takes one handler."
+    }
+    precondition {
+      condition     = !local.pre_stop_sleep_enabled || try(var.pre_stop_sleep_seconds < coalesce(var.termination_grace_period_seconds, 30), true)
+      error_message = "pre_stop_sleep_seconds must be lower than termination_grace_period_seconds (Kubernetes default 30): the preStop hook runs inside the grace period, and the application still needs time to drain after SIGTERM."
     }
   }
 }

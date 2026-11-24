@@ -93,6 +93,10 @@ locals {
   probes_enabled        = local.http_probes_enabled || local.tcp_probes_enabled
   startup_probe_enabled = var.startup_probe_path != null || local.probes_enabled
 
+  # preStop delay on the main container; null and 0 both mean "no hook", so
+  # existing users see no plan change.
+  pre_stop_sleep_enabled = coalesce(var.pre_stop_sleep_seconds, 0) > 0
+
   # Resource limits/requests
   memory_limit = coalesce(var.memory_limits, var.memory_requests, "1Gi")
 
