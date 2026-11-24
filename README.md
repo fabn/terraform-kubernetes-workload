@@ -258,6 +258,38 @@ module "workload" {
 }
 ```
 
+## Graceful shutdown behind a load balancer
+
+When a cloud load balancer registers pods as IP targets, a terminating pod gets
+SIGTERM while the load balancer is still deregistering it asynchronously. For a
+few seconds requests keep arriving at a server that has stopped accepting
+connections, and the load balancer answers 502. `pre_stop_sleep_seconds` keeps
+the main container serving until deregistration completes; SIGTERM is sent only
+after the delay.
+
+```hcl
+module "api" {
+  source = "fabn/workload/kubernetes"
+  # ...
+
+  pre_stop_sleep_seconds           = 20 # >= the load balancer's deregistration time
+  termination_grace_period_seconds = 45 # preStop delay + the application's own drain time
+}
+```
+
+The preStop hook runs **inside** the grace period, so
+`termination_grace_period_seconds` must cover the delay plus the time the
+application needs to drain after SIGTERM; the module rejects a delay that is not
+lower than the grace period (Kubernetes default 30). The hook is added to the
+main container only.
+
+The delay is currently rendered as an `exec` of `sleep <seconds>`, because the
+`hashicorp/kubernetes` provider does not yet support the native `sleep`
+lifecycle handler (`lifecycle.preStop.sleep`). The image must therefore ship a
+`sleep` binary on `PATH` (distroless and `scratch` images do not). The input is
+expected to switch to the native handler once the provider supports it; that
+switch will show as an in-place change of the pod template.
+
 ## Requirements
 
 | Name | Version |
@@ -367,6 +399,7 @@ module "workload" {
 | `pod_anti_affinity` | Optional raw pod anti-affinity rules (escape hatch), same shape as `pod_affinity`. Additive to the `anti_affinity` shorthand. | `object({ required = list(...), preferred = list(...) })` | `null` |
 | `topology_spread_constraints` | Optional topology spread constraints: list of `{ max_skew, topology_key, when_unsatisfiable, min_domains?, label_selector? }`. `label_selector` defaults to the workload's own pod labels. | `list(object({...}))` | `null` |
 | `termination_grace_period_seconds` | `spec.terminationGracePeriodSeconds` (null = k8s default 30). How long the kubelet waits between SIGTERM and SIGKILL, on **every** termination path — autoscaler scale-in, node drain, Spot reclaim, rollout. A queue worker's own shutdown timeout (Sidekiq `-t`, Celery warm shutdown) must fit inside it, or the process is killed while still waiting for its own jobs. Raising it also delays every voluntary drain and node consolidation by the same amount, and on Spot the provider's interruption notice (two minutes on AWS) is a hard ceiling. | `number` | `null` |
+| `pre_stop_sleep_seconds` | Seconds the main container keeps running after the pod starts terminating, before SIGTERM (`lifecycle.preStop`). `null`/`0` = no hook. Rendered as `exec: ["sleep", "<n>"]`, so the image needs a `sleep` binary on `PATH`. Must be lower than `termination_grace_period_seconds` (default 30). See [Graceful shutdown behind a load balancer](#graceful-shutdown-behind-a-load-balancer). | `number` | `null` |
 
 ### Labels and Annotations
 
